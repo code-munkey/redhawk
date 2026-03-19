@@ -11,7 +11,8 @@ MT.NAME     = "MonkeyTracker"
 
 -- Runtime state (initialized here so modules can safely reference these keys)
 MT.inCombat  = false
-MT.Roster    = {}       -- [playerName] = class  (populated by CooldownTracker)
+MT.Roster    = {}       -- [playerName] = class
 MT.ActiveCDs = {}       -- [playerName][spellID] = entry
-MT.ActiveBars = {}      -- currently displayed bar widgets
-MT.BarPool   = {}       -- recycled bar widgets
+MT.PlayerSpells = {}    -- [playerName][spellID] = cooldown (only spells they have talented)
+MT.ActiveBars = {}
+MT.BarPool   = {}

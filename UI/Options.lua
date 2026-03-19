@@ -20,10 +20,10 @@ MT.DB_DEFAULTS = {
     width          = 320,
     height         = 200,
     disabledSpells = {},  -- [spellID] = true → suppress that CD
-    categoryFilter = {    -- [category] = true → show it
-        [MT.CATEGORY.HEALING]  = true,
-        [MT.CATEGORY.UTILITY]  = true,
-        [MT.CATEGORY.EXTERNAL] = true,
+    categoryFilter = {
+        [MT.CATEGORY.HEALING]   = true,
+        [MT.CATEGORY.DEFENSIVE] = true,
+        [MT.CATEGORY.UTILITY]   = true,
     },
     cooldownOverrides = {}, -- [spellID] = number → custom cooldown
 }

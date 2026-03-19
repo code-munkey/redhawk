@@ -29,11 +29,15 @@ function MT.OnRosterUpdate()
         newRoster[member.name] = member.class
     end
 
-    -- Prune ActiveCDs for players who left the group
+    -- Prune ActiveCDs and PlayerSpells for players who left the group
     for playerName in pairs(MT.ActiveCDs) do
         if not newRoster[playerName] then
-            MT.Debug("Pruning cooldowns for departed player:", playerName)
             MT.ActiveCDs[playerName] = nil
+        end
+    end
+    for playerName in pairs(MT.PlayerSpells) do
+        if not newRoster[playerName] then
+            MT.PlayerSpells[playerName] = nil
         end
     end
 
@@ -72,8 +76,11 @@ function MT.OnSpellCast(playerName, playerClass, spellID)
         MT.ActiveCDs[playerName] = {}
     end
 
-    -- Apply any cooldown reduction from saved config (future feature hook)
+    -- Use the player's reported cooldown if available, else SpellDB default
     local cd = spellData.cooldown
+    if MT.PlayerSpells[playerName] and MT.PlayerSpells[playerName][spellID] then
+        cd = MT.PlayerSpells[playerName][spellID]
+    end
     if MT.db and MT.db.cooldownOverrides and MT.db.cooldownOverrides[spellID] then
         cd = MT.db.cooldownOverrides[spellID]
     end
@@ -122,33 +129,33 @@ function MT.GetActiveCooldowns()
         end
     end
 
-    -- Add all abilities from roster
+    -- Add only spells players have reported having
     for playerName, playerClass in pairs(MT.Roster) do
-        for spellID, spellData in pairs(MT.SpellDB) do
-            if spellData.class == playerClass and not disabled[spellID] then
-                local cd = overrides[spellID] or spellData.cooldown
-                local remaining = 0
-                local castTime = 0
-                local expireTime = 0
-
-                local activeSpells = MT.ActiveCDs[playerName]
-                if activeSpells and activeSpells[spellID] then
-                    local entry = activeSpells[spellID]
-                    remaining = math.max(0, entry.expireTime - now)
-                    castTime = entry.castTime
-                    expireTime = entry.expireTime
+        local knownSpells = MT.PlayerSpells[playerName]
+        if knownSpells then
+            for spellID, cd in pairs(knownSpells) do
+                local spellData = MT.SpellDB[spellID]
+                if spellData and not disabled[spellID] then
+                    cd = overrides[spellID] or cd
+                    local remaining, castTime, expireTime = 0, 0, 0
+                    local activeSpells = MT.ActiveCDs[playerName]
+                    if activeSpells and activeSpells[spellID] then
+                        local entry = activeSpells[spellID]
+                        remaining  = math.max(0, entry.expireTime - now)
+                        castTime   = entry.castTime
+                        expireTime = entry.expireTime
+                    end
+                    table.insert(list, {
+                        playerName  = playerName,
+                        playerClass = playerClass,
+                        spellID     = spellID,
+                        spellData   = spellData,
+                        remaining   = remaining,
+                        cooldown    = cd,
+                        castTime    = castTime,
+                        expireTime  = expireTime,
+                    })
                 end
-
-                table.insert(list, {
-                    playerName  = playerName,
-                    playerClass = playerClass,
-                    spellID     = spellID,
-                    spellData   = spellData,
-                    remaining   = remaining,
-                    cooldown    = cd,
-                    castTime    = castTime,
-                    expireTime  = expireTime,
-                })
             end
         end
     end

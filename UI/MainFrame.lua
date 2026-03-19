@@ -16,7 +16,8 @@ local UPDATE_INTERVAL  = 0.1
 
 MT.MainFrame = {}
 local F = MT.MainFrame
-F.ActiveBars = {}   -- must be initialized here; Refresh() iterates it before Build() returns
+F.ActiveBars = {}
+F.Headers = {}  -- category header frames, keyed by category name
 
 -- ============================================================
 -- Build Frame
@@ -189,38 +190,73 @@ function F.Refresh()
     local yOffset = 0
     local barIndex = 1
 
-    -- Display bars
-    for i, entry in ipairs(cooldowns) do
-        -- Category filter
-        if F.IsCategoryVisible(entry.spellData.category) then
-            local bar = oldBars[barIndex]
-            if not bar then
-                bar = MT.AcquireBar(F.scrollParent)
-            end
-            
-            bar:ClearAllPoints()
-            MT.UpdateBar(bar, entry, parentW - FRAME_PADDING)
-            bar:SetPoint("TOPLEFT", F.scrollParent, "TOPLEFT", 2, -yOffset)
-            table.insert(F.ActiveBars, bar)
-            yOffset = yOffset + BAR_HEIGHT + BAR_SPACING
+    local CATEGORY_ORDER = { MT.CATEGORY.HEALING, MT.CATEGORY.DEFENSIVE, MT.CATEGORY.UTILITY }
+
+    -- Group entries by category
+    local byCategory = {}
+    for _, entry in ipairs(cooldowns) do
+        local cat = entry.spellData.category
+        if not byCategory[cat] then byCategory[cat] = {} end
+        table.insert(byCategory[cat], entry)
+    end
+
+    for _, cat in ipairs(CATEGORY_ORDER) do
+        local entries = byCategory[cat]
+        if entries and #entries > 0 and F.IsCategoryVisible(cat) then
+            -- Category header
+            local header = F.GetOrCreateHeader(cat, barIndex)
+            header:ClearAllPoints()
+            header:SetPoint("TOPLEFT", F.scrollParent, "TOPLEFT", 2, -yOffset)
+            header:SetWidth(parentW - FRAME_PADDING)
+            header:Show()
+            table.insert(F.ActiveBars, header)
+            yOffset = yOffset + 18 + BAR_SPACING
             barIndex = barIndex + 1
+
+            for _, entry in ipairs(entries) do
+                local bar = oldBars[barIndex]
+                if not bar or bar.isHeader then
+                    bar = MT.AcquireBar(F.scrollParent)
+                end
+                bar:ClearAllPoints()
+                MT.UpdateBar(bar, entry, parentW - FRAME_PADDING)
+                bar:SetPoint("TOPLEFT", F.scrollParent, "TOPLEFT", 2, -yOffset)
+                table.insert(F.ActiveBars, bar)
+                yOffset = yOffset + BAR_HEIGHT + BAR_SPACING
+                barIndex = barIndex + 1
+            end
         end
     end
 
-    -- Return any unused bars to pool (e.g., if the list shrunk)
     for i = barIndex, #oldBars do
-        MT.ReleaseBar(oldBars[i])
+        local b = oldBars[i]
+        if b.isHeader then b:Hide() else MT.ReleaseBar(b) end
     end
 
-    if #F.ActiveBars == 0 then
-        F.emptyLabel:Show()
-    else
-        F.emptyLabel:Hide()
-    end
+    F.emptyLabel:SetShown(#F.ActiveBars == 0)
 end
 
 function F.OnDataChanged()
     F.Refresh()
+end
+
+function F.GetOrCreateHeader(category, index)
+    local h = F.Headers[category]
+    if not h then
+        h = CreateFrame("Frame", nil, F.scrollParent)
+        h:SetHeight(18)
+        h.isHeader = true
+        local bg = h:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.08, 0.08, 0.12, 0.95)
+        local label = h:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        label:SetPoint("LEFT", h, "LEFT", 6, 0)
+        label:SetTextColor(0.6, 0.6, 0.7, 1)
+        h.label = label
+        F.Headers[category] = h
+    end
+    h.label:SetText(category:upper())
+    return h
 end
 
 -- ============================================================

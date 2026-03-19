@@ -8,9 +8,9 @@ local MT = MonkeyTracker
 
 -- Categories for filtering/display
 MT.CATEGORY = {
-    HEALING  = "Healing",
-    UTILITY  = "Utility",
-    EXTERNAL = "External",
+    HEALING   = "Healing",
+    DEFENSIVE = "Defensive",
+    UTILITY   = "Utility",
 }
 
 -- Class tokens used as filter keys
@@ -50,7 +50,7 @@ MT.SpellDB = {
         name     = "Innervate",
         class    = "DRUID",
         cooldown = 180,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Cast on target to restore mana.",
     },
     [20484] = {
@@ -82,14 +82,14 @@ MT.SpellDB = {
         name     = "Blessing of Sacrifice",
         class    = "PALADIN",
         cooldown = 120,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Transfers 30% of damage taken by target to the Paladin.",
     },
     [1022] = {
         name     = "Blessing of Protection",
         class    = "PALADIN",
         cooldown = 300,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Protects target from physical damage.",
     },
     [64901] = {
@@ -126,7 +126,7 @@ MT.SpellDB = {
         name     = "Pain Suppression",
         class    = "PRIEST",
         cooldown = 180,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Reduces target's damage taken by 40%.",
     },
     [271466] = {
@@ -146,7 +146,7 @@ MT.SpellDB = {
         name     = "Guardian Spirit",
         class    = "PRIEST",
         cooldown = 180,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Prevents target from dying once.",
     },
 
@@ -202,7 +202,7 @@ MT.SpellDB = {
         name     = "Life Cocoon",
         class    = "MONK",
         cooldown = 120,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Encases target in a healing cocoon.",
     },
     [322118] = {
@@ -245,7 +245,7 @@ MT.SpellDB = {
         name     = "Rescue",
         class    = "EVOKER",
         cooldown = 60,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Lifts and carries an ally to safety.",
     },
 
@@ -308,7 +308,7 @@ MT.SpellDB = {
         name     = "Roar of Sacrifice",
         class    = "HUNTER",
         cooldown = 60,
-        category = MT.CATEGORY.EXTERNAL,
+        category = MT.CATEGORY.DEFENSIVE,
         note     = "Pet takes 20% of damage from target ally.",
     },
 
