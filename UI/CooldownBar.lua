@@ -4,12 +4,15 @@
 
 local MT = MonkeyTracker
 
--- Bar dimensions
-local BAR_HEIGHT         = 28
-local BAR_WIDTH          = 300  -- default; scales with frame width
-local ICON_SIZE          = BAR_HEIGHT
-local CLASS_STRIPE_WIDTH = 4
-local BAR_PADDING        = 2
+-- Bar dimensions (defaults; actual values read from MT.db at bar creation/update)
+local BAR_HEIGHT_DEFAULT  = 28
+local BAR_WIDTH           = 300
+local CLASS_STRIPE_WIDTH  = 4
+local BAR_PADDING         = 2
+
+local function GetBarH()  return (MT.db and MT.db.barHeight)   or BAR_HEIGHT_DEFAULT end
+local function GetBarF()  return (MT.db and MT.db.barFont)     or "Fonts\\FRIZQT__.TTF" end
+local function GetBarFS() return (MT.db and MT.db.barFontSize) or 11 end
 
 -- Pool of reusable bar frames to avoid create/destroy churn
 MT.BarPool = {}
@@ -42,8 +45,9 @@ end
 
 --- Construct a new bar frame with all sub-elements.
 function MT.CreateBar(parent)
+    local BH = GetBarH()
     local f = CreateFrame("Frame", nil, parent)
-    f:SetHeight(BAR_HEIGHT)
+    f:SetHeight(BH)
 
     -- Background
     f.bg = f:CreateTexture(nil, "BACKGROUND")
@@ -58,7 +62,7 @@ function MT.CreateBar(parent)
 
     -- Spell icon
     f.icon = f:CreateTexture(nil, "ARTWORK")
-    f.icon:SetSize(ICON_SIZE - 2, ICON_SIZE - 2)
+    f.icon:SetSize(BH - 2, BH - 2)
     f.icon:SetPoint("LEFT", f.stripe, "RIGHT", 2, 0)
     f.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)  -- trim default icon borders
 
@@ -76,18 +80,19 @@ function MT.CreateBar(parent)
     f.progressBg:SetColorTexture(0.12, 0.12, 0.12, 0.9)
 
     -- Player + Spell label
+    local bf, bfs = GetBarF(), GetBarFS()
     f.label = f.progress:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     f.label:SetPoint("LEFT",  f.progress, "LEFT",  5, 0)
     f.label:SetPoint("RIGHT", f.progress, "RIGHT", -40, 0)
     f.label:SetJustifyH("LEFT")
-    f.label:SetFont(f.label:GetFont(), 11, "OUTLINE")
+    f.label:SetFont(bf, bfs, "OUTLINE")
     f.label:SetTextColor(1, 1, 1, 1)
 
     -- Time remaining label
     f.timeText = f.progress:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     f.timeText:SetPoint("RIGHT", f.progress, "RIGHT", -4, 0)
     f.timeText:SetJustifyH("RIGHT")
-    f.timeText:SetFont(f.timeText:GetFont(), 11, "OUTLINE")
+    f.timeText:SetFont(bf, bfs, "OUTLINE")
     f.timeText:SetTextColor(1, 1, 1, 1)
 
     -- Tooltip support
@@ -139,6 +144,10 @@ function MT.UpdateBar(bar, entry, width)
 
     -- Label: "PlayerName – SpellName"
     bar.label:SetText(entry.playerName .. "  " .. entry.spellData.name)
+    -- Apply current font settings
+    local bf, bfs = GetBarF(), GetBarFS()
+    bar.label:SetFont(bf, bfs, "OUTLINE")
+    bar.timeText:SetFont(bf, bfs, "OUTLINE")
 
     -- Progress and color
     local progress = 1 - (entry.remaining / entry.cooldown)  -- 0=fresh, 1=ready

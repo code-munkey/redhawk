@@ -17,6 +17,7 @@ Core\EventHandler.lua
 
 # UI – requires Core to be loaded
 UI\CooldownBar.lua
+UI\WindowManager.lua
 UI\MainFrame.lua
 UI\Options.lua
 

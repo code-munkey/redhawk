@@ -6,6 +6,9 @@ local MT = MonkeyTracker
 local ADDON_MSG_PREFIX  = "MT_CD"
 local SPELL_LIST_PREFIX = "MT_SL"
 local SPELL_REQ_PREFIX  = "MT_REQ"
+local VERSION_PREFIX    = "MT_VER"   -- broadcast: request everyone's version
+local VERSION_REPLY     = "MT_VERR"  -- reply: I am on version X
+local PLAYER_REFRESH    = "MT_PREF"  -- targeted: ask one player to rebroadcast spells
 local ADDON_MSG_CHANNEL = "PARTY" -- falls back to RAID when in raid
 
 local eventFrame = CreateFrame("Frame")
@@ -22,6 +25,7 @@ local function RefreshUnitEventRegistrations()
 end
 
 local function GetMsgChannel()
+    if IsInGroup(2) then return "INSTANCE_CHAT" end
     return IsInRaid() and "RAID" or "PARTY"
 end
 
@@ -37,7 +41,7 @@ function MT.BroadcastSpellList()
     MT.PlayerSpells[playerName] = {}
 
     for spellID, spellData in pairs(MT.SpellDB) do
-        if IsPlayerSpell(spellID) then
+        if IsPlayerSpell(spellID) or IsSpellKnown(spellID, false) then
             local cd = spellData.cooldown
             local cdInfo = C_Spell.GetSpellCooldown(spellID)
             if cdInfo and cdInfo.duration and cdInfo.duration > 0 then
@@ -73,10 +77,10 @@ local function OnAddonSpellList(sender, message)
     MT.PlayerSpells[shortName] = MT.PlayerSpells[shortName] or {}
     local count = 0
     for pair in message:gmatch("[^,]+") do
-        local spellID, cd = pair:match("^(%d+):(%d+)$")
-        spellID, cd = tonumber(spellID), tonumber(cd)
-        if spellID and cd and MT.SpellDB[spellID] then
-            MT.PlayerSpells[shortName][spellID] = cd
+        local spellID, cdStr = pair:match("^(%d+):([%d%.]+)$")
+        local spellIDNum, cdNum = tonumber(spellID), tonumber(cdStr)
+        if spellIDNum and cdNum and MT.SpellDB[spellIDNum] then
+            MT.PlayerSpells[shortName][spellIDNum] = cdNum
             count = count + 1
         end
     end
@@ -87,6 +91,35 @@ end
 local function BroadcastCast(spellID)
     local channel = GetMsgChannel()
     C_ChatInfo.SendAddonMessage(ADDON_MSG_PREFIX, tostring(spellID), channel)
+end
+
+-- ============================================================
+-- Public: version check, spell list request, per-player refresh
+-- ============================================================
+
+function MT.BroadcastVersionCheck()
+    if not IsInGroup() then
+        MT.Print("Version check: not in a group.")
+        return
+    end
+    MT.Print("|cffffd700[Version Check]|r Sending request... replies will appear below.")
+    C_ChatInfo.SendAddonMessage(VERSION_PREFIX, MT.VERSION, GetMsgChannel())
+end
+
+function MT.RequestSpellLists()
+    MT.BroadcastSpellList()  -- broadcast our own
+    if IsInGroup() then
+        C_ChatInfo.SendAddonMessage(SPELL_REQ_PREFIX, "req", GetMsgChannel())
+        MT.Print("Requesting spell lists from all group members.")
+    end
+end
+
+function MT.RequestPlayerRefresh(playerName)
+    if not playerName or playerName == "" then return end
+    if IsInGroup() then
+        C_ChatInfo.SendAddonMessage(PLAYER_REFRESH, playerName, GetMsgChannel())
+        MT.Print("Requesting spell refresh from:", playerName)
+    end
 end
 
 -- ============================================================
@@ -171,23 +204,39 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             SafeReg("CHAT_MSG_ADDON")
             -- Only track own casts via unit event (player only, no restrictions)
             eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+            
             C_ChatInfo.RegisterAddonMessagePrefix(ADDON_MSG_PREFIX)
             C_ChatInfo.RegisterAddonMessagePrefix(SPELL_LIST_PREFIX)
             C_ChatInfo.RegisterAddonMessagePrefix(SPELL_REQ_PREFIX)
+            C_ChatInfo.RegisterAddonMessagePrefix(VERSION_PREFIX)
+            C_ChatInfo.RegisterAddonMessagePrefix(VERSION_REPLY)
+            C_ChatInfo.RegisterAddonMessagePrefix(PLAYER_REFRESH)
         end
 
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnPlayerSpellCastSucceeded(event, ...)
 
     elseif event == "CHAT_MSG_ADDON" then
-        local prefix, message, _, sender = ...
+        local prefix, message, channel, sender = ...
         if prefix == ADDON_MSG_PREFIX then
-            OnAddonMessage(prefix, message, nil, sender)
+            OnAddonMessage(prefix, message, channel, sender)
         elseif prefix == SPELL_LIST_PREFIX then
             OnAddonSpellList(sender, message)
         elseif prefix == SPELL_REQ_PREFIX then
-            -- Someone joined/reloaded and is requesting spell lists — broadcast ours
             MT.BroadcastSpellList()
+        elseif prefix == VERSION_PREFIX then
+            -- Someone is checking versions — reply with ours
+            C_ChatInfo.SendAddonMessage(VERSION_REPLY, MT.VERSION, GetMsgChannel())
+        elseif prefix == VERSION_REPLY then
+            -- Got a version reply from a group member
+            local shortSender = strsplit("-", sender)
+            MT.Print(string.format("|cffffd700[Version Check]|r %s: v%s", shortSender, message))
+        elseif prefix == PLAYER_REFRESH then
+            -- Targeted refresh: only reply if the payload matches our name
+            local myName = strsplit("-", UnitName("player") or "")
+            if message == myName then
+                MT.BroadcastSpellList()
+            end
         end
 
     elseif event == "PLAYER_LOGIN" then
