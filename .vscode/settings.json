@@ -18,6 +18,7 @@
     "Lua.diagnostics.globals": [
         "RAID_CLASS_COLORS",
         "SlashCmdList",
-        "Settings"
+        "Settings",
+        "ReloadUI"
     ]
 }

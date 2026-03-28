@@ -11,6 +11,12 @@ RAPE.CATEGORY = {
     UTILITY   = "Utility",
 }
 
+RAPE.VOIDSPIRE = {
+    BOSSES = {
+        IMPERATOR_AVERZIAN = 3176
+    }
+}
+
 -- Class tokens used as filter keys
 -- (matches WoW's internals: "DRUID", "PALADIN", etc.)
 
@@ -25,6 +31,35 @@ RAPE.CATEGORY = {
         note     = string,   -- optional tooltip note
     }
 --]]
+
+--- Returns a table of spells indexed by spellID for a specific class.
+-- @param classToken string  The class token in CAPS (e.g., "PALADIN", "DRUID")
+-- @return table             { [spellID] = { name, class, cooldown, ... } }
+function RAPE.GetSpellsByClass(classToken)
+    local results = {}
+    for spellID, data in pairs(RAPE.SpellDB) do
+        if data.class == classToken then
+            results[spellID] = data
+        end
+    end
+    return results
+end
+
+--- Returns an array of spell data for a specific class.
+-- @param classToken string  The class token in CAPS (e.g., "PALADIN")
+-- @return table[]           A list of spell data tables
+function RAPE.GetSpellsByClassList(classToken)
+    local results = {}
+    for spellID, data in pairs(RAPE.SpellDB) do
+        if data.class == classToken then
+            -- Create a copy and include the ID for ease of use
+            local spell = { spellID = spellID }
+            for k, v in pairs(data) do spell[k] = v end
+            table.insert(results, spell)
+        end
+    end
+    return results
+end
 
 RAPE.SpellDB = {
     [31821] = {

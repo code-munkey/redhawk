@@ -136,3 +136,27 @@ end
 function RAPE.Print(...)
     print("|cff4fc3f7[RAPE]|r", ...)
 end
+
+function RAPE.UpdateRosterData()
+    local newRoster = {}
+    for i = 1, GetNumGroupMembers(), 1 do
+        print('Updating roster data ...')
+        name, rank, subgroup, level, class, fileName, zone, online, isDead, role, isML = GetRaidRosterInfo(i);
+        newRoster[i] = {
+            name = name,
+            rank = rank,
+            subgroup = subgroup,
+            level = level,
+            class = string.upper(class),
+            online = online,
+            isDead = isDead,
+            role = role,
+            isML = isML
+        }
+    end
+    RAPE.RaidRoster = newRoster
+end
+
+RAPE.RaidRoster = {
+
+}

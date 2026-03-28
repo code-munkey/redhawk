@@ -11,6 +11,9 @@ local PLAYER_REFRESH    = "RAPE_PREF"  -- targeted: ask one player to rebroadcas
 local FORCE_SETTING     = "RAPE_FSET"  -- admin: force a setting on all clients
 local ADDON_MSG_CHANNEL = "PARTY" -- falls back to RAID when in raid
 
+local ENCOUNTER_ID = 0
+local ENCOUNTER_DIFF = 0
+
 local eventFrame = CreateFrame("Frame")
 RAPE.EventFrame = eventFrame
 
@@ -44,12 +47,8 @@ function RAPE.BroadcastSpellList()
     RAPE.PlayerSpells[playerName] = {}
 
     for spellID, spellData in pairs(RAPE.SpellDB) do
-        if IsPlayerSpell(spellID) or IsSpellKnown(spellID, false) then
+        if C_SpellBook.IsSpellInSpellBook(spellID) then
             local cd = spellData.cooldown
-            local cdInfo = C_Spell.GetSpellCooldown(spellID)
-            if cdInfo and cdInfo.duration and cdInfo.duration > 0 then
-                cd = cdInfo.duration
-            end
             RAPE.PlayerSpells[playerName][spellID] = cd
             parts[#parts+1] = spellID..":"..cd
         end
@@ -192,6 +191,11 @@ end
 -- Combat / zone state
 -- ============================================================
 
+local function OnEncounterStart(event, encounterID, encounterName, difficultyID, groupSize)
+    ENCOUNTER_ID = encounterID
+    ENCOUNTER_DIFF = difficultyID
+end
+
 local function OnCombatStart()
     RAPE.inCombat = true
     RAPE.Debug("Combat started.")
@@ -239,13 +243,17 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             C_ChatInfo.RegisterAddonMessagePrefix(FORCE_SETTING)
         end
 
+    elseif event == "ENCOUNTER_START" then
+        OnEncounterStart(event, ...)
+
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnPlayerSpellCastSucceeded(event, ...)
 
     elseif event == "UNIT_AURA" then
         local unit = ...
-        if unit == "player" and RAPE.CheckVoidMarked then
+        if unit == "player" and RAPE.CheckVoidMarked and ENCOUNTER_ID == RAPE.VOIDSPIRE.BOSSES.IMPERATOR_AVERZIAN then
             RAPE.CheckVoidMarked()
+            RAPE.Print("Averzian engaged ...")
         end
 
     elseif event == "CHAT_MSG_ADDON" then
@@ -302,6 +310,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
         RefreshUnitEventRegistrations()
 
     elseif event == "GROUP_ROSTER_UPDATE" then
+        RAPE.UpdateRosterData()
         RAPE.OnRosterUpdate()
         RAPE.BroadcastSpellList()
         if IsInGroup() then

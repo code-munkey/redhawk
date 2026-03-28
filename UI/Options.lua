@@ -699,49 +699,38 @@ function O.RegisterSlashCommands()
             RAPE.MainFrame.Hide()
             RAPE.Print("Tracker hidden. Type /RAPE show to show.")
 
-        elseif msg == "toggle" then
-            RAPE.MainFrame.Toggle()
-
+        elseif msg == "options" then
+            RAPE.MainPanel:Toggle()
         elseif msg == "lock" then
             RAPE.db.windows[1].locked = true
             RAPE.WM.ApplyLockState(1)
             RAPE.Print("Window 1 locked.")
-
         elseif msg == "unlock" then
             RAPE.db.windows[1].locked = false
             RAPE.WM.ApplyLockState(1)
             RAPE.Print("Window 1 unlocked.")
-
         elseif msg == "reset" then
             RAPE.ClearAllCooldowns()
             RAPE.Print("All cooldowns cleared.")
-
         elseif msg == "config" then
             O.Toggle()
-
         elseif msg == "debug" then
             RAPE.db.debugMode = not RAPE.db.debugMode
             RAPE.Print("Debug mode:", RAPE.db.debugMode and "ON" or "OFF")
-
         elseif msg == "version" then
             RAPE.BroadcastVersionCheck()
-
         elseif msg == "reqspells" then
             RAPE.RequestSpellLists()
-
         elseif msg:sub(1, 8) == "refresh " then
             RAPE.RequestPlayerRefresh(strtrim(msg:sub(9)))
-
         elseif msg == "voidmark" then
             if RAPE.VoidMarkedFrame then
                 RAPE.VoidMarkedFrame.Toggle()
             end
-
         elseif msg == "admin" then
             if RAPE.AdminFrame then
                 RAPE.AdminFrame.Toggle()
             end
-
         elseif msg == "testvoidmark" or msg:sub(1, 13) == "testvoidmark " then
             local action = strtrim(msg:sub(14))
             RAPE.TestVoidMark(action)

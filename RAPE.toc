@@ -5,6 +5,7 @@
 ## Author: monkeysmash
 ## SavedVariables: RapeDB
 ## DefaultState: enabled
+## Dependencies: LanternUX
 ## IconTexture: Interface\AddOns\RAPE\rape_icon.png
 
 ## Category-enUS: Redhawk
@@ -22,6 +23,7 @@ UI\CooldownBar.lua
 UI\WindowManager.lua
 UI\VoidMarkedFrame.lua
 UI\MainFrame.lua
+UI\OptionsPanel.lua
 UI\Options.lua
 UI\AdminFrame.lua
 
