@@ -9,12 +9,12 @@ MonkeyTracker currently tracks group cooldowns by listening to `COMBAT_LOG_EVENT
 - **EventHandler**: The MonkeyTracker module (`Core/EventHandler.lua`) responsible for registering WoW events and dispatching to internal handlers.
 - **CooldownTracker**: The MonkeyTracker module (`Core/CooldownTracker.lua`) that records active cooldowns and exposes them to the UI.
 - **SpellDB**: The MonkeyTracker module (`Core/SpellDB.lua`) containing the set of tracked spell IDs and their metadata.
-- **TrackedSpellIDs**: The reverse-lookup table `MT.TrackedSpellIDs` built from SpellDB, used for O(1) spell filtering.
+- **TrackedSpellIDs**: The reverse-lookup table `RAPE.TrackedSpellIDs` built from SpellDB, used for O(1) spell filtering.
 - **castBarId**: The value carried in the `castGUID` parameter of `UNIT_SPELLCAST_SUCCEEDED` (marked "neversecret") that uniquely identifies a specific cast instance, used for deduplication.
 - **UNIT_SPELLCAST_SUCCEEDED**: The WoW client event that fires per unit token when a unit completes a spell cast. Signature: `event, unitTarget, castGUID, spellID`. In WoW: Midnight, `castGUID` carries the `castBarId`.
 - **unitTarget**: The unit token string (e.g. `"player"`, `"party1"`, `"raid3"`) passed as the first payload argument of `UNIT_SPELLCAST_SUCCEEDED`.
-- **Roster**: The `MT.Roster` table mapping player names to class tokens, maintained by CooldownTracker.
-- **OnSpellCast**: The existing `MT.OnSpellCast(playerName, playerClass, spellID)` function in CooldownTracker that records a cooldown entry.
+- **Roster**: The `RAPE.Roster` table mapping player names to class tokens, maintained by CooldownTracker.
+- **OnSpellCast**: The existing `RAPE.OnSpellCast(playerName, playerClass, spellID)` function in CooldownTracker that records a cooldown entry.
 
 ---
 
@@ -31,7 +31,7 @@ MonkeyTracker currently tracks group cooldowns by listening to `COMBAT_LOG_EVENT
 3. WHEN `UNIT_SPELLCAST_SUCCEEDED` fires, THE EventHandler SHALL extract `unitTarget`, `castGUID` (castBarId), and `spellID` from the event payload.
 4. WHEN `UNIT_SPELLCAST_SUCCEEDED` fires for a unit whose resolved name is not in the current Roster, THE EventHandler SHALL ignore the event without calling `OnSpellCast`.
 5. WHEN `UNIT_SPELLCAST_SUCCEEDED` fires for a `spellID` not present in `TrackedSpellIDs`, THE EventHandler SHALL ignore the event without calling `OnSpellCast`.
-6. WHEN `UNIT_SPELLCAST_SUCCEEDED` fires for a Roster member casting a TrackedSpellID, THE EventHandler SHALL call `MT.OnSpellCast(playerName, playerClass, spellID)` with the resolved player name and class from the Roster.
+6. WHEN `UNIT_SPELLCAST_SUCCEEDED` fires for a Roster member casting a TrackedSpellID, THE EventHandler SHALL call `RAPE.OnSpellCast(playerName, playerClass, spellID)` with the resolved player name and class from the Roster.
 
 ### Requirement 2: Resolve Player Identity from Unit Token
 
@@ -60,7 +60,7 @@ MonkeyTracker currently tracks group cooldowns by listening to `COMBAT_LOG_EVENT
 
 #### Acceptance Criteria
 
-1. THE EventHandler SHALL call `MT.OnSpellCast` with the same three-argument signature `(playerName, playerClass, spellID)` that the combat log handler previously used.
+1. THE EventHandler SHALL call `RAPE.OnSpellCast` with the same three-argument signature `(playerName, playerClass, spellID)` that the combat log handler previously used.
 2. THE CooldownTracker SHALL require no modifications to its `OnSpellCast`, `GetActiveCooldowns`, or roster management functions as a result of this change.
 3. THE SpellDB SHALL require no modifications to spell entries or `TrackedSpellIDs` as a result of this change.
 4. WHEN the addon is loaded in an environment where `UNIT_SPELLCAST_SUCCEEDED` is unavailable, THE EventHandler SHALL log a debug warning and continue loading without error.

@@ -2,10 +2,8 @@
 -- Manages state for all active (in-cooldown) tracked spells.
 -- Data flows: EventHandler → CooldownTracker → MainFrame (UI)
 
-local MT = MonkeyTracker
-
 -- ActiveCDs structure:
---   MT.ActiveCDs[playerName][spellID] = {
+--   RAPE.ActiveCDs[playerName][spellID] = {
 --     castTime   = number,   -- GetTime() when cast occurred
 --     expireTime = number,   -- castTime + cooldown
 --     cooldown   = number,   -- full cooldown duration in seconds
@@ -13,36 +11,42 @@ local MT = MonkeyTracker
 --     playerName = string,
 --     playerClass= string,
 --   }
-MT.ActiveCDs = {}
+RAPE.ActiveCDs = {}
 
 -- Known roster: playerName → class (refreshed on GROUP_ROSTER_UPDATE)
-MT.Roster = {}
+RAPE.Roster = {}
 
 -- ============================================================
 -- Roster Management
 -- ============================================================
 
 --- Rebuild the known roster from current group composition.
-function MT.OnRosterUpdate()
+function RAPE.OnRosterUpdate()
     local newRoster = {}
-    for _, member in ipairs(MT.GetGroupMembers()) do
+    for _, member in ipairs(RAPE.GetGroupMembers()) do
         newRoster[member.name] = member.class
     end
 
     -- Prune ActiveCDs and PlayerSpells for players who left the group
-    for playerName in pairs(MT.ActiveCDs) do
+    for playerName in pairs(RAPE.ActiveCDs) do
         if not newRoster[playerName] then
-            MT.ActiveCDs[playerName] = nil
+            RAPE.ActiveCDs[playerName] = nil
         end
     end
-    for playerName in pairs(MT.PlayerSpells) do
+    for playerName in pairs(RAPE.PlayerSpells) do
         if not newRoster[playerName] then
-            MT.PlayerSpells[playerName] = nil
+            RAPE.PlayerSpells[playerName] = nil
         end
     end
 
-    MT.Roster = newRoster
-    MT.Debug("Roster updated. Members:", MT.TableCount(MT.Roster))
+    RAPE.Roster = newRoster
+
+    -- Prune void marked state for players no longer in group
+    if RAPE.PruneVoidMarked then
+        RAPE.PruneVoidMarked()
+    end
+
+    RAPE.Debug("Roster updated. Members:", RAPE.TableCount(RAPE.Roster))
 end
 
 -- ============================================================
@@ -53,41 +57,41 @@ end
 -- @param playerName  string   Source player name
 -- @param playerClass string   WoW class token
 -- @param spellID     number   Spell ID that was cast
-function MT.OnSpellCast(playerName, playerClass, spellID)
-    local spellData = MT.SpellDB[spellID]
+function RAPE.OnSpellCast(playerName, playerClass, spellID)
+    local spellData = RAPE.SpellDB[spellID]
     if not spellData then return end
 
     -- Check if this spell is enabled in user settings
-    if MT.db and MT.db.disabledSpells and MT.db.disabledSpells[spellID] then
-        MT.Debug("Spell disabled by user:", spellData.name)
+    if RAPE.db and RAPE.db.disabledSpells and RAPE.db.disabledSpells[spellID] then
+        RAPE.Debug("Spell disabled by user:", spellData.name)
         return
     end
 
     -- Check if this player's class matches the expected class for the spell
     -- (guards against spoofed or misidentified casts)
     if spellData.class and playerClass and spellData.class ~= playerClass then
-        MT.Debug("Class mismatch for spell", spellData.name, "expected", spellData.class, "got", playerClass)
+        RAPE.Debug("Class mismatch for spell", spellData.name, "expected", spellData.class, "got", playerClass)
         return
     end
 
     local now = GetTime()
 
-    if not MT.ActiveCDs[playerName] then
-        MT.ActiveCDs[playerName] = {}
+    if not RAPE.ActiveCDs[playerName] then
+        RAPE.ActiveCDs[playerName] = {}
     end
 
     -- Use the player's reported cooldown if available, else SpellDB default
     local cd = spellData.cooldown
-    if MT.PlayerSpells[playerName] and MT.PlayerSpells[playerName][spellID] then
-        cd = MT.PlayerSpells[playerName][spellID]
+    if RAPE.PlayerSpells[playerName] and RAPE.PlayerSpells[playerName][spellID] then
+        cd = RAPE.PlayerSpells[playerName][spellID]
     end
-    if MT.db and MT.db.cooldownOverrides and MT.db.cooldownOverrides[spellID] then
-        cd = MT.db.cooldownOverrides[spellID]
+    if RAPE.db and RAPE.db.cooldownOverrides and RAPE.db.cooldownOverrides[spellID] then
+        cd = RAPE.db.cooldownOverrides[spellID]
     end
 
-    MT.Debug("Recording CD:", playerName, spellData.name, "for", cd, "seconds")
+    RAPE.Debug("Recording CD:", playerName, spellData.name, "for", cd, "seconds")
 
-    MT.ActiveCDs[playerName][spellID] = {
+    RAPE.ActiveCDs[playerName][spellID] = {
         castTime    = now,
         expireTime  = now + cd,
         cooldown    = cd,
@@ -97,8 +101,8 @@ function MT.OnSpellCast(playerName, playerClass, spellID)
     }
 
     -- Notify UI that data changed (if UI is ready)
-    if MT.MainFrame and MT.MainFrame.OnDataChanged then
-        MT.MainFrame.OnDataChanged()
+    if RAPE.MainFrame and RAPE.MainFrame.OnDataChanged then
+        RAPE.MainFrame.OnDataChanged()
     end
 end
 
@@ -110,35 +114,35 @@ end
 -- Entries are sorted by: remaining time ascending (soonest ready first).
 -- Expired entries (remain <= 0) are pruned here.
 -- @return table[]  List of active CD entries
-function MT.GetActiveCooldowns()
+function RAPE.GetActiveCooldowns()
     local now = GetTime()
     local list = {}
 
-    local overrides = MT.db and MT.db.cooldownOverrides or {}
-    local disabled  = MT.db and MT.db.disabledSpells or {}
+    local overrides = RAPE.db and RAPE.db.cooldownOverrides or {}
+    local disabled  = RAPE.db and RAPE.db.disabledSpells or {}
 
     -- Clean up expired entries
-    for playerName, spells in pairs(MT.ActiveCDs) do
+    for playerName, spells in pairs(RAPE.ActiveCDs) do
         for spellID, entry in pairs(spells) do
             if entry.expireTime - now <= 0 then
                 spells[spellID] = nil
             end
         end
         if not next(spells) then
-            MT.ActiveCDs[playerName] = nil
+            RAPE.ActiveCDs[playerName] = nil
         end
     end
 
     -- Add only spells players have reported having
-    for playerName, playerClass in pairs(MT.Roster) do
-        local knownSpells = MT.PlayerSpells[playerName]
+    for playerName, playerClass in pairs(RAPE.Roster) do
+        local knownSpells = RAPE.PlayerSpells[playerName]
         if knownSpells then
             for spellID, cd in pairs(knownSpells) do
-                local spellData = MT.SpellDB[spellID]
+                local spellData = RAPE.SpellDB[spellID]
                 if spellData and not disabled[spellID] then
                     cd = overrides[spellID] or cd
                     local remaining, castTime, expireTime = 0, 0, 0
-                    local activeSpells = MT.ActiveCDs[playerName]
+                    local activeSpells = RAPE.ActiveCDs[playerName]
                     if activeSpells and activeSpells[spellID] then
                         local entry = activeSpells[spellID]
                         remaining  = math.max(0, entry.expireTime - now)
@@ -201,27 +205,27 @@ function MT.GetActiveCooldowns()
     return list
 end
 
---- Force-clear a specific cooldown entry (e.g. on /mt reset).
-function MT.PurgeCooldown(playerName, spellID)
-    if MT.ActiveCDs[playerName] then
-        MT.ActiveCDs[playerName][spellID] = nil
-        if not next(MT.ActiveCDs[playerName]) then
-            MT.ActiveCDs[playerName] = nil
+--- Force-clear a specific cooldown entry (e.g. on /RAPE reset).
+function RAPE.PurgeCooldown(playerName, spellID)
+    if RAPE.ActiveCDs[playerName] then
+        RAPE.ActiveCDs[playerName][spellID] = nil
+        if not next(RAPE.ActiveCDs[playerName]) then
+            RAPE.ActiveCDs[playerName] = nil
         end
     end
 end
 
 --- Clear all tracked cooldowns (e.g. on zone change or wipe).
-function MT.ClearAllCooldowns()
-    MT.ActiveCDs = {}
-    MT.Debug("All cooldowns cleared.")
+function RAPE.ClearAllCooldowns()
+    RAPE.ActiveCDs = {}
+    RAPE.Debug("All cooldowns cleared.")
 end
 
 -- ============================================================
 -- Helper
 -- ============================================================
 
-function MT.TableCount(t)
+function RAPE.TableCount(t)
     local n = 0
     for _ in pairs(t) do n = n + 1 end
     return n

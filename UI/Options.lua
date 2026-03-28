@@ -1,22 +1,20 @@
 -- MonkeyTracker: Options.lua
 -- DB defaults, InitDB, custom 4-tab options panel, and slash commands.
 
-local MT = MonkeyTracker
-
-MT.Options = {}
-local O = MT.Options
+RAPE.Options = {}
+local O = RAPE.Options
 
 -- ============================================================
 -- Default Settings
 -- ============================================================
 
-MT.DB_DEFAULTS = {
+RAPE.DB_DEFAULTS = {
     debugMode         = false,
     disabledSpells    = {},
     categoryFilter    = {
-        [MT.CATEGORY.HEALING]   = true,
-        [MT.CATEGORY.DEFENSIVE] = true,
-        [MT.CATEGORY.UTILITY]   = true,
+        [RAPE.CATEGORY.HEALING]   = true,
+        [RAPE.CATEGORY.DEFENSIVE] = true,
+        [RAPE.CATEGORY.UTILITY]   = true,
     },
     cooldownOverrides = {},
     windows           = {},   -- populated by WM.DefaultWindowConfig on first run
@@ -26,22 +24,22 @@ MT.DB_DEFAULTS = {
 }
 
 --- Merge saved variables with defaults and handle legacy migration.
-function MT.InitDB()
-    if not MonkeyTrackerDB then MonkeyTrackerDB = {} end
+function RAPE.InitDB()
+    if not RapeDB then RapeDB = {} end
 
-    for k, v in pairs(MT.DB_DEFAULTS) do
-        if MonkeyTrackerDB[k] == nil then
+    for k, v in pairs(RAPE.DB_DEFAULTS) do
+        if RapeDB[k] == nil then
             if type(v) == "table" then
                 local copy = {}
                 for k2, v2 in pairs(v) do copy[k2] = v2 end
-                MonkeyTrackerDB[k] = copy
+                RapeDB[k] = copy
             else
-                MonkeyTrackerDB[k] = v
+                RapeDB[k] = v
             end
         end
     end
 
-    local db = MonkeyTrackerDB
+    local db = RapeDB
 
     -- MIGRATION: old single-window fields → windows[1]
     if (db.x or db.y or db.width or db.height) and (#db.windows == 0) then
@@ -61,10 +59,10 @@ function MT.InitDB()
 
     -- Ensure at least one window config
     if not db.windows or #db.windows == 0 then
-        db.windows = { MT.WM.DefaultWindowConfig(1) }
+        db.windows = { RAPE.WM.DefaultWindowConfig(1) }
     end
 
-    MT.db = MonkeyTrackerDB
+    RAPE.db = RapeDB
 end
 
 -- ============================================================
@@ -236,7 +234,7 @@ end
 
 local function GetSortedSpells()
     local list = {}
-    for spellID, data in pairs(MT.SpellDB) do
+    for spellID, data in pairs(RAPE.SpellDB) do
         table.insert(list, { id = spellID, name = data.name, class = data.class, data = data })
     end
     table.sort(list, function(a, b)
@@ -296,12 +294,12 @@ function O.RefreshSpellTab()
         local cb = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
         cb:SetSize(20, 20)
         cb:SetPoint("LEFT", row, "LEFT", 2, 0)
-        cb:SetChecked(not (MT.db.disabledSpells[capturedID]))
+        cb:SetChecked(not (RAPE.db.disabledSpells[capturedID]))
         cb:SetScript("OnClick", function(self)
             if self:GetChecked() then
-                MT.db.disabledSpells[capturedID] = nil
+                RAPE.db.disabledSpells[capturedID] = nil
             else
-                MT.db.disabledSpells[capturedID] = true
+                RAPE.db.disabledSpells[capturedID] = true
             end
         end)
 
@@ -318,7 +316,7 @@ function O.RefreshSpellTab()
         lbl:SetPoint("LEFT",  icon, "RIGHT", 4, 0)
         lbl:SetPoint("RIGHT", row,  "RIGHT", -60, 0)
         lbl:SetJustifyH("LEFT")
-        local r, g, b = MT.GetClassColor(spell.class)
+        local r, g, b = RAPE.GetClassColor(spell.class)
         lbl:SetTextColor(r, g, b, 1)
         lbl:SetText(spell.class .. "  " .. spell.name)
 
@@ -329,7 +327,7 @@ function O.RefreshSpellTab()
 
         local function UpdateWinBtnText()
             local assigned = "All"
-            for idx, wincfg in ipairs(MT.db.windows) do
+            for idx, wincfg in ipairs(RAPE.db.windows) do
                 if wincfg.spells[capturedID] then
                     assigned = "W" .. idx
                     break
@@ -340,20 +338,20 @@ function O.RefreshSpellTab()
 
         winBtn:SetScript("OnClick", function()
             local currentWin = 0
-            for idx, wincfg in ipairs(MT.db.windows) do
+            for idx, wincfg in ipairs(RAPE.db.windows) do
                 if wincfg.spells[capturedID] then
                     currentWin = idx
                     break
                 end
             end
             -- Remove from all
-            for _, wincfg in ipairs(MT.db.windows) do
+            for _, wincfg in ipairs(RAPE.db.windows) do
                 wincfg.spells[capturedID] = nil
             end
             -- Assign to next
             local nextWin = currentWin + 1
-            if nextWin <= #MT.db.windows then
-                MT.db.windows[nextWin].spells[capturedID] = true
+            if nextWin <= #RAPE.db.windows then
+                RAPE.db.windows[nextWin].spells[capturedID] = true
             end
             -- else stays "All" (not in any window's filter)
             UpdateWinBtnText()
@@ -379,7 +377,7 @@ function O.BuildWindowsTab(parent)
     local addBtn = MakeButton(parent, "+ Add Window", 140, 24)
     addBtn:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 4, 4)
     addBtn:SetScript("OnClick", function()
-        MT.WM.AddWindow()
+        RAPE.WM.AddWindow()
         O.RefreshWindowsTab()
     end)
 
@@ -404,9 +402,9 @@ function O.RefreshWindowsTab()
     O.winRows = {}
 
     local ROW_H = 30
-    child:SetHeight(#MT.db.windows * ROW_H + 4)
+    child:SetHeight(#RAPE.db.windows * ROW_H + 4)
 
-    for i, wincfg in ipairs(MT.db.windows) do
+    for i, wincfg in ipairs(RAPE.db.windows) do
         local capturedI = i
         local y = -(i - 1) * ROW_H - 2
 
@@ -431,7 +429,7 @@ function O.RefreshWindowsTab()
         eb:SetText(wincfg.label or ("Window " .. i))
         eb:SetScript("OnEnterPressed", function(self)
             wincfg.label = self:GetText()
-            MT.WM.UpdateWindowLabel(capturedI)
+            RAPE.WM.UpdateWindowLabel(capturedI)
             self:ClearFocus()
         end)
         eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
@@ -441,21 +439,21 @@ function O.RefreshWindowsTab()
         local visBtn = MakeButton(row, vis, 50, 20)
         visBtn:SetPoint("RIGHT", row, "RIGHT", -28, 0)
         visBtn:SetScript("OnClick", function(self)
-            if MT.db.windows[capturedI].hidden then
-                MT.WM.ShowWindow(capturedI)
+            if RAPE.db.windows[capturedI].hidden then
+                RAPE.WM.ShowWindow(capturedI)
                 self:SetText("Hide")
             else
-                MT.WM.HideWindow(capturedI)
+                RAPE.WM.HideWindow(capturedI)
                 self:SetText("Show")
             end
         end)
 
         -- Remove button (only if more than 1 window)
-        if #MT.db.windows > 1 then
+        if #RAPE.db.windows > 1 then
             local remBtn = MakeButton(row, "✕", 22, 20)
             remBtn:SetPoint("RIGHT", row, "RIGHT", -2, 0)
             remBtn:SetScript("OnClick", function()
-                MT.WM.RemoveWindow(capturedI)
+                RAPE.WM.RemoveWindow(capturedI)
                 O.RefreshWindowsTab()
             end)
         end
@@ -470,8 +468,8 @@ function O.BuildAppearanceTab(parent)
     local Y = -10
 
     MakeLabel(parent, "Bar Height", 10, Y, {0.8, 0.8, 0.8})
-    local hSlider = MakeSlider(parent, "Bar Height (px)", 16, 48, 1, MT.db.barHeight, 10, Y - 14, 280)
-    hSlider.slider.onChange = function(val) MT.db.barHeight = val end
+    local hSlider = MakeSlider(parent, "Bar Height (px)", 16, 48, 1, RAPE.db.barHeight, 10, Y - 14, 280)
+    hSlider.slider.onChange = function(val) RAPE.db.barHeight = val end
     Y = Y - 60
 
     MakeLabel(parent, "Font", 10, Y, {0.8, 0.8, 0.8})
@@ -480,21 +478,21 @@ function O.BuildAppearanceTab(parent)
     -- Font cycling button
     local currentFontIdx = 1
     for i, f in ipairs(FONTS) do
-        if f.path == MT.db.barFont then currentFontIdx = i break end
+        if f.path == RAPE.db.barFont then currentFontIdx = i break end
     end
 
     local fontBtn = MakeButton(parent, FONTS[currentFontIdx].name, 200, 24)
     fontBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, Y)
     fontBtn:SetScript("OnClick", function()
         currentFontIdx = (currentFontIdx % #FONTS) + 1
-        MT.db.barFont = FONTS[currentFontIdx].path
+        RAPE.db.barFont = FONTS[currentFontIdx].path
         fontBtn:SetText(FONTS[currentFontIdx].name)
     end)
     Y = Y - 38
 
     MakeLabel(parent, "Font Size", 10, Y, {0.8, 0.8, 0.8})
-    local fsSlider = MakeSlider(parent, "Font Size", 8, 20, 1, MT.db.barFontSize, 10, Y - 14, 280)
-    fsSlider.slider.onChange = function(val) MT.db.barFontSize = val end
+    local fsSlider = MakeSlider(parent, "Font Size", 8, 20, 1, RAPE.db.barFontSize, 10, Y - 14, 280)
+    fsSlider.slider.onChange = function(val) RAPE.db.barFontSize = val end
     Y = Y - 70
 
     local divider = parent:CreateTexture(nil, "BACKGROUND")
@@ -508,18 +506,18 @@ function O.BuildAppearanceTab(parent)
     Y = Y - 22
 
     local categories = {
-        { key = MT.CATEGORY.HEALING,   label = "Healing"   },
-        { key = MT.CATEGORY.DEFENSIVE, label = "Defensive" },
-        { key = MT.CATEGORY.UTILITY,   label = "Utility"   },
+        { key = RAPE.CATEGORY.HEALING,   label = "Healing"   },
+        { key = RAPE.CATEGORY.DEFENSIVE, label = "Defensive" },
+        { key = RAPE.CATEGORY.UTILITY,   label = "Utility"   },
     }
     for _, cat in ipairs(categories) do
         local catKey = cat.key
         local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
         cb:SetSize(20, 20)
         cb:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, Y)
-        cb:SetChecked(MT.db.categoryFilter[catKey] ~= false)
+        cb:SetChecked(RAPE.db.categoryFilter[catKey] ~= false)
         cb:SetScript("OnClick", function(self)
-            MT.db.categoryFilter[catKey] = self:GetChecked()
+            RAPE.db.categoryFilter[catKey] = self:GetChecked()
         end)
         local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         lbl:SetPoint("LEFT", cb, "RIGHT", 2, 0)
@@ -531,8 +529,8 @@ function O.BuildAppearanceTab(parent)
     local applyBtn = MakeButton(parent, "Apply Appearance Changes", 220, 26)
     applyBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, Y)
     applyBtn:SetScript("OnClick", function()
-        MT.WM.RebuildAll()
-        MT.Print("Appearance applied.")
+        RAPE.WM.RebuildAll()
+        RAPE.Print("Appearance applied.")
     end)
 end
 
@@ -552,13 +550,13 @@ function O.BuildToolsTab(parent)
     O.debugBtn = debugBtn
 
     local function UpdateDebugBtn()
-        local state = MT.db.debugMode and "|cff00ff00ON|r" or "|cffff4444OFF|r"
+        local state = RAPE.db.debugMode and "|cff00ff00ON|r" or "|cffff4444OFF|r"
         debugBtn:SetText("Debug Logging: " .. state)
     end
     debugBtn:SetScript("OnClick", function()
-        MT.db.debugMode = not MT.db.debugMode
+        RAPE.db.debugMode = not RAPE.db.debugMode
         UpdateDebugBtn()
-        MT.Print("Debug mode:", MT.db.debugMode and "ON" or "OFF")
+        RAPE.Print("Debug mode:", RAPE.db.debugMode and "ON" or "OFF")
     end)
     UpdateDebugBtn()
     Y = Y - 38
@@ -576,7 +574,7 @@ function O.BuildToolsTab(parent)
 
     local verBtn = MakeButton(parent, "Check Version", 160, 26)
     verBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, Y)
-    verBtn:SetScript("OnClick", function() MT.BroadcastVersionCheck() end)
+    verBtn:SetScript("OnClick", function() RAPE.BroadcastVersionCheck() end)
     verBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText("Asks all group members to report their MonkeyTracker version.\nReplies appear in chat.")
@@ -587,7 +585,7 @@ function O.BuildToolsTab(parent)
 
     local slBtn = MakeButton(parent, "Request All Spell Lists", 200, 26)
     slBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, Y)
-    slBtn:SetScript("OnClick", function() MT.RequestSpellLists() end)
+    slBtn:SetScript("OnClick", function() RAPE.RequestSpellLists() end)
     slBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText("Asks all group members to rebroadcast their spell lists.\nUseful if someone's cooldowns aren't showing.")
@@ -637,14 +635,14 @@ function O.BuildToolsTab(parent)
     refreshBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, Y)
     refreshBtn:SetScript("OnClick", function()
         local name = rosterNames[rosterIdx]
-        if name then MT.RequestPlayerRefresh(name) end
+        if name then RAPE.RequestPlayerRefresh(name) end
     end)
 
     -- Re-populate roster names whenever the tab is shown
     O.refreshToolsRoster = function()
         rosterNames = {}
         rosterIdx   = 1
-        for name in pairs(MT.Roster) do
+        for name in pairs(RAPE.Roster) do
             table.insert(rosterNames, name)
         end
         table.sort(rosterNames)
@@ -659,7 +657,7 @@ end
 function O.RefreshToolsTab()
     if O.refreshToolsRoster then O.refreshToolsRoster() end
     if O.debugBtn then
-        local state = MT.db.debugMode and "|cff00ff00ON|r" or "|cffff4444OFF|r"
+        local state = RAPE.db.debugMode and "|cff00ff00ON|r" or "|cffff4444OFF|r"
         O.debugBtn:SetText("Debug Logging: " .. state)
     end
 end
@@ -688,87 +686,103 @@ function O.RegisterSettingsPanel() end
 -- ============================================================
 
 function O.RegisterSlashCommands()
-    SLASH_MONKEYTRACKER1 = "/mt"
-    SLASH_MONKEYTRACKER2 = "/monkeytracker"
+    SLASH_RAPE1 = "/RAPE"
 
-    SlashCmdList["MONKEYTRACKER"] = function(msg)
+    SlashCmdList["RAPE"] = function(msg)
         msg = msg and strtrim(msg:lower()) or ""
 
         if msg == "" or msg == "show" then
-            MT.MainFrame.Show()
-            MT.Print("Tracker shown. Type /mt hide to hide.")
+            RAPE.MainFrame.Show()
+            RAPE.Print("Tracker shown. Type /RAPE hide to hide.")
 
         elseif msg == "hide" then
-            MT.MainFrame.Hide()
-            MT.Print("Tracker hidden. Type /mt show to show.")
+            RAPE.MainFrame.Hide()
+            RAPE.Print("Tracker hidden. Type /RAPE show to show.")
 
         elseif msg == "toggle" then
-            MT.MainFrame.Toggle()
+            RAPE.MainFrame.Toggle()
 
         elseif msg == "lock" then
-            MT.db.windows[1].locked = true
-            MT.WM.ApplyLockState(1)
-            MT.Print("Window 1 locked.")
+            RAPE.db.windows[1].locked = true
+            RAPE.WM.ApplyLockState(1)
+            RAPE.Print("Window 1 locked.")
 
         elseif msg == "unlock" then
-            MT.db.windows[1].locked = false
-            MT.WM.ApplyLockState(1)
-            MT.Print("Window 1 unlocked.")
+            RAPE.db.windows[1].locked = false
+            RAPE.WM.ApplyLockState(1)
+            RAPE.Print("Window 1 unlocked.")
 
         elseif msg == "reset" then
-            MT.ClearAllCooldowns()
-            MT.Print("All cooldowns cleared.")
+            RAPE.ClearAllCooldowns()
+            RAPE.Print("All cooldowns cleared.")
 
         elseif msg == "config" then
             O.Toggle()
 
         elseif msg == "debug" then
-            MT.db.debugMode = not MT.db.debugMode
-            MT.Print("Debug mode:", MT.db.debugMode and "ON" or "OFF")
+            RAPE.db.debugMode = not RAPE.db.debugMode
+            RAPE.Print("Debug mode:", RAPE.db.debugMode and "ON" or "OFF")
 
         elseif msg == "version" then
-            MT.BroadcastVersionCheck()
+            RAPE.BroadcastVersionCheck()
 
         elseif msg == "reqspells" then
-            MT.RequestSpellLists()
+            RAPE.RequestSpellLists()
 
         elseif msg:sub(1, 8) == "refresh " then
-            MT.RequestPlayerRefresh(strtrim(msg:sub(9)))
+            RAPE.RequestPlayerRefresh(strtrim(msg:sub(9)))
+
+        elseif msg == "voidmark" then
+            if RAPE.VoidMarkedFrame then
+                RAPE.VoidMarkedFrame.Toggle()
+            end
+
+        elseif msg == "admin" then
+            if RAPE.AdminFrame then
+                RAPE.AdminFrame.Toggle()
+            end
+
+        elseif msg == "testvoidmark" or msg:sub(1, 13) == "testvoidmark " then
+            local action = strtrim(msg:sub(14))
+            RAPE.TestVoidMark(action)
 
         elseif msg == "debug roster" then
-            MT.Print("Current roster (" .. MT.TableCount(MT.Roster) .. " members):")
-            for name, class in pairs(MT.Roster) do
-                MT.Print("  " .. name .. " — " .. class)
+            RAPE.Print("Current roster (" .. RAPE.TableCount(RAPE.Roster) .. " members):")
+            for name, class in pairs(RAPE.Roster) do
+                RAPE.Print("  " .. name .. " — " .. class)
             end
 
         elseif msg == "debug cds" then
-            local list = MT.GetActiveCooldowns()
+            local list = RAPE.GetActiveCooldowns()
             if #list == 0 then
-                MT.Print("No active cooldowns tracked.")
+                RAPE.Print("No active cooldowns tracked.")
             else
-                MT.Print("Active cooldowns (" .. #list .. "):")
+                RAPE.Print("Active cooldowns (" .. #list .. "):")
                 for _, e in ipairs(list) do
-                    MT.Print(string.format("  [%s] %s — %s remaining",
-                        e.playerName, e.spellData.name, MT.FormatTime(e.remaining)))
+                    RAPE.Print(string.format("  [%s] %s — %s remaining",
+                        e.playerName, e.spellData.name, RAPE.FormatTime(e.remaining)))
                 end
             end
 
         elseif msg == "help" then
-            MT.Print("/mt              — show tracker")
-            MT.Print("/mt hide         — hide tracker")
-            MT.Print("/mt toggle       — toggle visibility")
-            MT.Print("/mt lock/unlock  — lock/unlock window 1")
-            MT.Print("/mt reset        — clear all active cooldowns")
-            MT.Print("/mt config       — open settings panel")
-            MT.Print("/mt debug        — toggle debug logging")
-            MT.Print("/mt version      — broadcast version check")
-            MT.Print("/mt reqspells    — request spell lists from all")
-            MT.Print("/mt refresh <name> — request refresh from player")
-            MT.Print("/mt debug roster — print known raid members")
-            MT.Print("/mt debug cds    — list all active cooldowns")
+            RAPE.Print("/RAPE              — show tracker")
+            RAPE.Print("/RAPE hide         — hide tracker")
+            RAPE.Print("/RAPE toggle       — toggle visibility")
+            RAPE.Print("/RAPE lock/unlock  — lock/unlock window 1")
+            RAPE.Print("/RAPE reset        — clear all active cooldowns")
+            RAPE.Print("/RAPE config       — open settings panel")
+            RAPE.Print("/RAPE debug        — toggle debug logging")
+            RAPE.Print("/RAPE version      — broadcast version check")
+            RAPE.Print("/RAPE reqspells    — request spell lists from all")
+            RAPE.Print("/RAPE refresh <name> — request refresh from player")
+            RAPE.Print("/RAPE voidmark      — toggle Void Marked tracker")
+            RAPE.Print("/RAPE admin          — open admin / raid leader panel")
+            RAPE.Print("/RAPE testvoidmark [gain|fade] — simulate void mark")
+            RAPE.Print("/RAPE debug roster — print known raid members")
+            RAPE.Print("/RAPE debug cds    — list all active cooldowns")
 
         else
-            MT.Print("Unknown command. Type /mt help for options.")
+            RAPE.Print("Unknown command. Type /RAPE help for options.")
         end
     end
 end

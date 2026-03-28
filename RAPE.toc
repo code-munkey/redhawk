@@ -1,25 +1,29 @@
 ## Interface: 120001, 120000
-## Title: MonkeyTracker
+## Title: Redhawk Advanced Performance Enhancer (RAPE)
 ## Notes: Tracks healing and utility cooldowns for all raid members (Anti-Magic Zone, Tranquility, Stampeding Roar, etc.)
 ## Version: 1.0.0
 ## Author: monkeysmash
-## SavedVariables: MonkeyTrackerDB
+## SavedVariables: RapeDB
 ## DefaultState: enabled
+## IconTexture: Interface\AddOns\RAPE\rape_icon.png
 
-## Category-enUS: MonkeyAddons
+## Category-enUS: Redhawk
 
 # Core – Init MUST be first so the namespace exists for all other modules
 Core\Init.lua
 Core\SpellDB.lua
 Core\Utils.lua
 Core\CooldownTracker.lua
+Core\AuraTracker.lua
 Core\EventHandler.lua
 
 # UI – requires Core to be loaded
 UI\CooldownBar.lua
 UI\WindowManager.lua
+UI\VoidMarkedFrame.lua
 UI\MainFrame.lua
 UI\Options.lua
+UI\AdminFrame.lua
 
 # Entry point – runs after all modules are registered
-MonkeyTracker.lua
+RAPE.lua

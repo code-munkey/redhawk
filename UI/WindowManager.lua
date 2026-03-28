@@ -1,9 +1,6 @@
 -- MonkeyTracker: WindowManager.lua
 -- Manages one or more independently positioned tracker windows.
--- Each window reads its config from MT.db.windows[idx].
-
-local MT = MonkeyTracker
-
+-- Each window reads its config from RAPE.db.windows[idx].
 local FRAME_MIN_W  = 200
 local FRAME_MIN_H  = 60
 local BAR_SPACING  = 2
@@ -11,15 +8,15 @@ local HEADER_H     = 22
 local FRAME_PAD    = 4
 local UPDATE_TICK  = 0.1
 
-MT.WM = {}
-local WM = MT.WM
+RAPE.WM = {}
+local WM = RAPE.WM
 WM.Windows = {}  -- [idx] = window-object
 
 -- ============================================================
 -- Helpers
 -- ============================================================
 
-local function GetBarH() return (MT.db and MT.db.barHeight) or 28 end
+local function GetBarH() return (RAPE.db and RAPE.db.barHeight) or 28 end
 
 -- ============================================================
 -- Default window config
@@ -43,10 +40,10 @@ end
 -- ============================================================
 
 function WM.Build()
-    if not MT.db.windows or #MT.db.windows == 0 then
-        MT.db.windows = { WM.DefaultWindowConfig(1) }
+    if not RAPE.db.windows or #RAPE.db.windows == 0 then
+        RAPE.db.windows = { WM.DefaultWindowConfig(1) }
     end
-    for idx = 1, #MT.db.windows do
+    for idx = 1, #RAPE.db.windows do
         if not WM.Windows[idx] then
             WM.BuildWindow(idx)
         end
@@ -58,7 +55,7 @@ end
 -- ============================================================
 
 function WM.BuildWindow(idx)
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     if not cfg then return end
 
     local win = { idx = idx, ActiveBars = {}, BarPool = {}, Headers = {} }
@@ -118,7 +115,7 @@ function WM.BuildWindow(idx)
     lockBtn:SetScript("OnClick", function() WM.ToggleLock(capturedIdx) end)
     lockBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(MT.db.windows[capturedIdx].locked and "Unlock frame" or "Lock frame")
+        GameTooltip:SetText(RAPE.db.windows[capturedIdx].locked and "Unlock frame" or "Lock frame")
         GameTooltip:Show()
     end)
     lockBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -130,7 +127,7 @@ function WM.BuildWindow(idx)
     cfgBtn:SetPoint("RIGHT", lockBtn, "LEFT", -2, 0)
     cfgBtn:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
     cfgBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-    cfgBtn:SetScript("OnClick", function() MT.Options.Toggle() end)
+    cfgBtn:SetScript("OnClick", function() RAPE.Options.Toggle() end)
     cfgBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText("MonkeyTracker Settings")
@@ -140,7 +137,7 @@ function WM.BuildWindow(idx)
 
     -- Header drag
     header:SetScript("OnMouseDown", function(self, btn)
-        if btn == "LeftButton" and not MT.db.windows[capturedIdx].locked then
+        if btn == "LeftButton" and not RAPE.db.windows[capturedIdx].locked then
             frame:StartMoving()
         end
     end)
@@ -164,7 +161,7 @@ function WM.BuildWindow(idx)
     grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
     grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
     grip:SetScript("OnMouseDown", function(self, btn)
-        if btn == "LeftButton" and not MT.db.windows[capturedIdx].locked then
+        if btn == "LeftButton" and not RAPE.db.windows[capturedIdx].locked then
             frame:StartSizing("BOTTOMRIGHT")
         end
     end)
@@ -204,14 +201,14 @@ end
 function WM.RefreshWindow(win)
     if not win or not win.frame or not win.frame:IsShown() then return end
 
-    local cfg         = MT.db.windows[win.idx]
+    local cfg         = RAPE.db.windows[win.idx]
     local filterSet   = cfg and cfg.spells
     local hasFilter   = filterSet and next(filterSet) ~= nil
-    local disabled    = MT.db.disabledSpells or {}
+    local disabled    = RAPE.db.disabledSpells or {}
 
     -- GetActiveCooldowns() already filters global disabledSpells.
     -- Here we only need to apply the per-window spell whitelist (if set).
-    local cooldowns = MT.GetActiveCooldowns()
+    local cooldowns = RAPE.GetActiveCooldowns()
     if hasFilter then
         local filtered = {}
         for _, entry in ipairs(cooldowns) do
@@ -230,7 +227,7 @@ function WM.RefreshWindow(win)
     local yOffset  = 0
     local barIndex = 1
 
-    local CATEGORY_ORDER = { MT.CATEGORY.HEALING, MT.CATEGORY.DEFENSIVE, MT.CATEGORY.UTILITY }
+    local CATEGORY_ORDER = { RAPE.CATEGORY.HEALING, RAPE.CATEGORY.DEFENSIVE, RAPE.CATEGORY.UTILITY }
     local byCategory = {}
     for _, entry in ipairs(cooldowns) do
         local cat = entry.spellData.category
@@ -256,7 +253,7 @@ function WM.RefreshWindow(win)
                     bar = WM.AcquireBar(win)
                 end
                 bar:ClearAllPoints()
-                MT.UpdateBar(bar, entry, parentW - FRAME_PAD)
+                RAPE.UpdateBar(bar, entry, parentW - FRAME_PAD)
                 bar:SetPoint("TOPLEFT", win.scrollParent, "TOPLEFT", 2, -yOffset)
                 table.insert(win.ActiveBars, bar)
                 yOffset  = yOffset + BH + BAR_SPACING
@@ -286,7 +283,7 @@ end
 function WM.AcquireBar(win)
     local bar = table.remove(win.BarPool)
     if not bar then
-        bar = MT.CreateBar(win.scrollParent)
+        bar = RAPE.CreateBar(win.scrollParent)
     else
         bar:SetParent(win.scrollParent)
         bar:Show()
@@ -328,14 +325,14 @@ end
 -- ============================================================
 
 function WM.ToggleLock(idx)
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     if cfg then cfg.locked = not cfg.locked end
     WM.ApplyLockState(idx)
 end
 
 function WM.ApplyLockState(idx)
     local win = WM.Windows[idx]
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     if not win or not cfg then return end
     if cfg.locked then
         win.lockBtn:SetNormalTexture("Interface\\Buttons\\LockButton-Locked-Up")
@@ -350,7 +347,7 @@ end
 
 function WM.SavePosition(idx)
     local win = WM.Windows[idx]
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     if not win or not cfg then return end
     cfg.x = win.frame:GetLeft()
     cfg.y = win.frame:GetTop()
@@ -363,8 +360,8 @@ end
 -- ============================================================
 
 function WM.IsCategoryVisible(category)
-    if not MT.db or not MT.db.categoryFilter then return true end
-    local filter = MT.db.categoryFilter[category]
+    if not RAPE.db or not RAPE.db.categoryFilter then return true end
+    local filter = RAPE.db.categoryFilter[category]
     if filter == nil then return true end
     return filter
 end
@@ -374,14 +371,14 @@ end
 -- ============================================================
 
 function WM.ShowWindow(idx)
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     local win = WM.Windows[idx]
     if cfg then cfg.hidden = false end
     if win and win.frame then win.frame:Show() end
 end
 
 function WM.HideWindow(idx)
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     local win = WM.Windows[idx]
     if cfg then cfg.hidden = true end
     if win and win.frame then win.frame:Hide() end
@@ -398,7 +395,7 @@ end
 
 function WM.UpdateWindowLabel(idx)
     local win = WM.Windows[idx]
-    local cfg = MT.db.windows[idx]
+    local cfg = RAPE.db.windows[idx]
     if win and win.title and cfg then
         win.title:SetText("|cff4fc3f7" .. (cfg.label or ("Window " .. idx)) .. "|r")
     end
@@ -409,25 +406,25 @@ end
 -- ============================================================
 
 function WM.AddWindow()
-    local idx = #MT.db.windows + 1
-    MT.db.windows[idx] = WM.DefaultWindowConfig(idx)
+    local idx = #RAPE.db.windows + 1
+    RAPE.db.windows[idx] = WM.DefaultWindowConfig(idx)
     WM.BuildWindow(idx)
     return idx
 end
 
 function WM.RemoveWindow(idx)
-    if #MT.db.windows <= 1 then return end  -- always keep at least 1
+    if #RAPE.db.windows <= 1 then return end  -- always keep at least 1
     local win = WM.Windows[idx]
     if win and win.frame then win.frame:Hide() end
 
-    table.remove(MT.db.windows, idx)
+    table.remove(RAPE.db.windows, idx)
     table.remove(WM.Windows, idx)
 
     -- Fix indices on remaining windows
     for i, w in ipairs(WM.Windows) do
         w.idx = i
-        if w.title and MT.db.windows[i] then
-            w.title:SetText("|cff4fc3f7" .. (MT.db.windows[i].label or ("Window " .. i)) .. "|r")
+        if w.title and RAPE.db.windows[i] then
+            w.title:SetText("|cff4fc3f7" .. (RAPE.db.windows[i].label or ("Window " .. i)) .. "|r")
         end
     end
 end
@@ -441,7 +438,7 @@ function WM.RebuildAll()
         if win.frame then win.frame:Hide() end
     end
     WM.Windows = {}
-    for idx = 1, #MT.db.windows do
+    for idx = 1, #RAPE.db.windows do
         WM.BuildWindow(idx)
     end
 end

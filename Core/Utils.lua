@@ -1,8 +1,6 @@
 -- MonkeyTracker: Utils.lua
 -- Shared helper functions.
 
-local MT = MonkeyTracker
-
 -- ============================================================
 -- Time Formatting
 -- ============================================================
@@ -10,7 +8,7 @@ local MT = MonkeyTracker
 --- Format seconds into a human-readable countdown string.
 -- @param seconds number  Remaining seconds.
 -- @return string         e.g. "2:30", "45s"
-function MT.FormatTime(seconds)
+function RAPE.FormatTime(seconds)
     seconds = math.max(0, seconds)
     if seconds >= 60 then
         local m = math.floor(seconds / 60)
@@ -29,7 +27,7 @@ end
 -- Falls back to white for unknown / nil class.
 -- @param class string  e.g. "DRUID", "PALADIN"
 -- @return number r, number g, number b
-function MT.GetClassColor(class)
+function RAPE.GetClassColor(class)
     if not class then return 1, 1, 1 end
     local color = (RAID_CLASS_COLORS or C_ClassColor.GetClassColor) and C_ClassColor.GetClassColor(class)
     if color then
@@ -64,7 +62,7 @@ end
 -- 0 = just used (red), 1 = fully ready (green).
 -- @param progress number  0.0 to 1.0
 -- @return number r, number g, number b
-function MT.GetCooldownColor(progress)
+function RAPE.GetCooldownColor(progress)
     progress = math.min(1, math.max(0, progress))
     -- Red → Yellow → Green
     if progress < 0.5 then
@@ -84,7 +82,7 @@ end
 
 --- Return a table of { name, class, unit } for all group members.
 -- @return table[]
-function MT.GetGroupMembers()
+function RAPE.GetGroupMembers()
     local members = {}
     local prefix, count
 
@@ -128,13 +126,13 @@ end
 -- ============================================================
 
 --- Print a debug message to chat if debug mode is on.
-function MT.Debug(...)
-    if MT.db and MT.db.debugMode then
-        print("|cff888888[MonkeyTracker Debug]|r", ...)
+function RAPE.Debug(...)
+    if RAPE.db and RAPE.db.debugMode then
+        print("|cff888888[RAPE Debug]|r", ...)
     end
 end
 
 --- Print an error/info message (always).
-function MT.Print(...)
-    print("|cff4fc3f7[MonkeyTracker]|r", ...)
+function RAPE.Print(...)
+    print("|cff4fc3f7[RAPE]|r", ...)
 end

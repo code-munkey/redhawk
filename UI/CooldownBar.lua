@@ -1,22 +1,19 @@
 -- MonkeyTracker: CooldownBar.lua
 -- Creates and manages individual cooldown row widgets.
 -- Each bar represents one active cooldown for one player.
-
-local MT = MonkeyTracker
-
--- Bar dimensions (defaults; actual values read from MT.db at bar creation/update)
+-- Bar dimensions (defaults; actual values read from RAPE.db at bar creation/update)
 local BAR_HEIGHT_DEFAULT  = 28
 local BAR_WIDTH           = 300
 local CLASS_STRIPE_WIDTH  = 4
 local BAR_PADDING         = 2
 
-local function GetBarH()  return (MT.db and MT.db.barHeight)   or BAR_HEIGHT_DEFAULT end
-local function GetBarF()  return (MT.db and MT.db.barFont)     or "Fonts\\FRIZQT__.TTF" end
-local function GetBarFS() return (MT.db and MT.db.barFontSize) or 11 end
+local function GetBarH()  return (RAPE.db and RAPE.db.barHeight)   or BAR_HEIGHT_DEFAULT end
+local function GetBarF()  return (RAPE.db and RAPE.db.barFont)     or "Fonts\\FRIZQT__.TTF" end
+local function GetBarFS() return (RAPE.db and RAPE.db.barFontSize) or 11 end
 
 -- Pool of reusable bar frames to avoid create/destroy churn
-MT.BarPool = {}
-MT.ActiveBars = {}
+RAPE.BarPool = {}
+RAPE.ActiveBars = {}
 
 -- ============================================================
 -- Bar Widget Factory
@@ -25,10 +22,10 @@ MT.ActiveBars = {}
 --- Creates a single cooldown bar frame (or recycles from pool).
 -- @param parent Frame
 -- @return Frame   The bar widget
-function MT.AcquireBar(parent)
-    local bar = table.remove(MT.BarPool)
+function RAPE.AcquireBar(parent)
+    local bar = table.remove(RAPE.BarPool)
     if not bar then
-        bar = MT.CreateBar(parent)
+        bar = RAPE.CreateBar(parent)
     else
         bar:SetParent(parent)
         bar:Show()
@@ -37,14 +34,14 @@ function MT.AcquireBar(parent)
 end
 
 --- Returns a bar to the pool.
-function MT.ReleaseBar(bar)
+function RAPE.ReleaseBar(bar)
     bar:Hide()
     bar:ClearAllPoints()
-    table.insert(MT.BarPool, bar)
+    table.insert(RAPE.BarPool, bar)
 end
 
 --- Construct a new bar frame with all sub-elements.
-function MT.CreateBar(parent)
+function RAPE.CreateBar(parent)
     local BH = GetBarH()
     local f = CreateFrame("Frame", nil, parent)
     f:SetHeight(BH)
@@ -105,7 +102,7 @@ function MT.CreateBar(parent)
                 GameTooltip:AddLine(self.entry.spellData.note, nil, nil, nil, true)
             end
             local remaining = self.entry.expireTime - GetTime()
-            GameTooltip:AddDoubleLine("Ready in:", MT.FormatTime(remaining), 0.7, 0.7, 0.7, 1, 0.8, 0.2)
+            GameTooltip:AddDoubleLine("Ready in:", RAPE.FormatTime(remaining), 0.7, 0.7, 0.7, 1, 0.8, 0.2)
             GameTooltip:Show()
         end
     end)
@@ -122,16 +119,16 @@ end
 
 --- Update a bar's visual state to match the given CD entry.
 -- @param bar   Frame     The bar widget
--- @param entry table     CD entry from MT.GetActiveCooldowns()
+-- @param entry table     CD entry from RAPE.GetActiveCooldowns()
 -- @param width number    Available width for the bar
-function MT.UpdateBar(bar, entry, width)
+function RAPE.UpdateBar(bar, entry, width)
     bar.entry = entry
 
     -- Layout to available width
     bar:SetWidth(width)
 
     -- Class stripe color
-    local r, g, b = MT.GetClassColor(entry.playerClass)
+    local r, g, b = RAPE.GetClassColor(entry.playerClass)
     bar.stripe:SetColorTexture(r, g, b, 1)
 
     -- Spell icon
@@ -155,13 +152,13 @@ function MT.UpdateBar(bar, entry, width)
 
     bar.progress:SetValue(progress)
 
-    local cr, cg, cb = MT.GetCooldownColor(progress)
+    local cr, cg, cb = RAPE.GetCooldownColor(progress)
     bar.progress:SetStatusBarColor(cr, cg, cb, 0.7)
 
     -- Time text
     if entry.remaining <= 0 then
         bar.timeText:SetText("Ready")
     else
-        bar.timeText:SetText(MT.FormatTime(entry.remaining))
+        bar.timeText:SetText(RAPE.FormatTime(entry.remaining))
     end
 end

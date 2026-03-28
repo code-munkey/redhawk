@@ -56,7 +56,7 @@ Modify `Core/EventHandler.lua` to replace `COMBAT_LOG_EVENT_UNFILTERED` with `UN
         SafeReg("UNIT_SPELLCAST_SUCCEEDED", unit)
     end
     ```
-  - If `SafeReg` returns false for any unit, emit `MT.Debug` warning and continue
+  - If `SafeReg` returns false for any unit, emit `RAPE.Debug` warning and continue
   - Add `UNIT_SPELLCAST_SUCCEEDED = OnUnitSpellCastSucceeded` to the event dispatch table
   - _Requirements: 1.2, 4.4_
 

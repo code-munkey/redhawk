@@ -17,7 +17,7 @@ UNIT_SPELLCAST_SUCCEEDED (WoW client, per unit token)
 EventHandler.lua  ──── filter: Roster + TrackedSpellIDs + dedup cache
         │
         ▼
-MT.OnSpellCast(playerName, playerClass, spellID)
+RAPE.OnSpellCast(playerName, playerClass, spellID)
         │
         ▼
 CooldownTracker  ──►  UI
@@ -47,7 +47,7 @@ local function OnUnitSpellCastSucceeded(event, unitTarget, castGUID, spellID)
     if seenCasts[castGUID] then return end
 
     -- 2. Spell filter
-    if not spellID or not MT.TrackedSpellIDs[spellID] then return end
+    if not spellID or not RAPE.TrackedSpellIDs[spellID] then return end
 
     -- 3. Resolve name
     local fullName = UnitName(unitTarget)
@@ -55,13 +55,13 @@ local function OnUnitSpellCastSucceeded(event, unitTarget, castGUID, spellID)
     local shortName = strsplit("-", fullName)
 
     -- 4. Roster filter
-    local playerClass = MT.Roster[shortName]
+    local playerClass = RAPE.Roster[shortName]
     if not playerClass then return end
 
     -- 5. Record + dispatch
     seenCasts[castGUID] = true
-    MT.Debug("UNIT_SPELLCAST_SUCCEEDED:", shortName, spellID)
-    MT.OnSpellCast(shortName, playerClass, spellID)
+    RAPE.Debug("UNIT_SPELLCAST_SUCCEEDED:", shortName, spellID)
+    RAPE.OnSpellCast(shortName, playerClass, spellID)
 end
 ```
 
@@ -78,9 +78,9 @@ end
 
 ### Interfaces (unchanged)
 
-- `MT.OnSpellCast(playerName, playerClass, spellID)` — signature unchanged
-- `MT.TrackedSpellIDs[spellID]` — O(1) lookup, unchanged
-- `MT.Roster[playerName]` — maps short name → class token, unchanged
+- `RAPE.OnSpellCast(playerName, playerClass, spellID)` — signature unchanged
+- `RAPE.TrackedSpellIDs[spellID]` — O(1) lookup, unchanged
+- `RAPE.Roster[playerName]` — maps short name → class token, unchanged
 
 ## Data Models
 
@@ -105,13 +105,13 @@ No persistence — session-scoped only. No serialization needed.
 
 ### Property 1: Non-roster and untracked events are silently ignored
 
-*For any* `UNIT_SPELLCAST_SUCCEEDED` event where either the resolved player name is absent from `MT.Roster` OR the `spellID` is absent from `MT.TrackedSpellIDs`, `MT.OnSpellCast` shall never be called.
+*For any* `UNIT_SPELLCAST_SUCCEEDED` event where either the resolved player name is absent from `RAPE.Roster` OR the `spellID` is absent from `RAPE.TrackedSpellIDs`, `RAPE.OnSpellCast` shall never be called.
 
 **Validates: Requirements 1.4, 1.5**
 
 ### Property 2: Valid cast dispatches correct arguments
 
-*For any* `UNIT_SPELLCAST_SUCCEEDED` event where the unit resolves to a Roster member and the spellID is in `TrackedSpellIDs`, `MT.OnSpellCast` is called exactly once with `(shortName, playerClass, spellID)` where `shortName` and `playerClass` come from the Roster.
+*For any* `UNIT_SPELLCAST_SUCCEEDED` event where the unit resolves to a Roster member and the spellID is in `TrackedSpellIDs`, `RAPE.OnSpellCast` is called exactly once with `(shortName, playerClass, spellID)` where `shortName` and `playerClass` come from the Roster.
 
 **Validates: Requirements 1.3, 1.6, 2.1, 4.1**
 
@@ -123,7 +123,7 @@ No persistence — session-scoped only. No serialization needed.
 
 ### Property 4: Duplicate castBarId suppresses dispatch
 
-*For any* `castGUID` (castBarId), if `UNIT_SPELLCAST_SUCCEEDED` fires twice with that same `castGUID`, `MT.OnSpellCast` is called at most once — on the first occurrence.
+*For any* `castGUID` (castBarId), if `UNIT_SPELLCAST_SUCCEEDED` fires twice with that same `castGUID`, `RAPE.OnSpellCast` is called at most once — on the first occurrence.
 
 **Validates: Requirements 3.2, 3.3**
 
@@ -139,7 +139,7 @@ No persistence — session-scoped only. No serialization needed.
 |---|---|
 | `UnitName(unitTarget)` returns `nil` | Discard event, no error |
 | `UnitName(unitTarget)` returns `UNKNOWNOBJECT` | Discard event, no error |
-| `UNIT_SPELLCAST_SUCCEEDED` unavailable for a unit token | `SafeReg` returns false; log `MT.Debug` warning; addon continues loading |
+| `UNIT_SPELLCAST_SUCCEEDED` unavailable for a unit token | `SafeReg` returns false; log `RAPE.Debug` warning; addon continues loading |
 | `castGUID` is nil | `seenCasts[nil]` is a valid Lua table key — treated as a single shared key; acceptable since nil castGUID is not a valid Midnight event |
 
 The existing `SafeReg` wrapper already handles `ADDON_ACTION_FORBIDDEN`. No new error-handling infrastructure is needed.

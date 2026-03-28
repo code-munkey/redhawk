@@ -2,27 +2,35 @@
 -- Entry point. Bootstraps all modules on ADDON_LOADED / PLAYER_LOGIN.
 -- The global namespace is created by Core/Init.lua (loaded first).
 
-local MT = MonkeyTracker
-
 -- ============================================================
 -- Bootstrap: called from EventHandler on ADDON_LOADED
 -- ============================================================
 
-function MT.OnAddonLoaded()
+function RAPE.OnAddonLoaded()
     -- 1. Initialize saved variables / defaults
-    MT.InitDB()
+    RAPE.InitDB()
 
     -- 2. Register slash commands
-    MT.Options.RegisterSlashCommands()
+    RAPE.Options.RegisterSlashCommands()
 
     -- 3. Build the main display frame
-    MT.MainFrame.Build()
+    RAPE.MainFrame.Build()
 
-    -- 4. Try to register the Blizzard settings panel
+    -- 4. Build the Void Marked tracker frame
+    if RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Build then
+        RAPE.VoidMarkedFrame.Build()
+    end
+
+    -- 5. Build the Admin panel (hidden by default)
+    if RAPE.AdminFrame and RAPE.AdminFrame.Build then
+        RAPE.AdminFrame.Build()
+    end
+
+    -- 6. Try to register the Blizzard settings panel
     --    (safe to call even if Settings API is not available)
-    MT.Options.RegisterSettingsPanel()
+    RAPE.Options.RegisterSettingsPanel()
 
-    MT.Debug("Addon loaded. Version:", MT.VERSION)
+    RAPE.Debug("Addon loaded. Version:", RAPE.VERSION)
 end
 
 -- ============================================================
@@ -30,9 +38,9 @@ end
 -- (fires after saved variables are loaded and UI is ready)
 -- ============================================================
 
-function MT.OnPlayerLogin()
+function RAPE.OnPlayerLogin()
     -- Initial roster scan so we have class info before any combat
-    MT.OnRosterUpdate()
+    RAPE.OnRosterUpdate()
 
-    MT.Print(string.format("v%s loaded. Type |cffffd700/mt help|r for commands.", MT.VERSION))
+    RAPE.Print(string.format("v%s loaded. Type |cffffd700/RAPE help|r for commands.", RAPE.VERSION))
 end
