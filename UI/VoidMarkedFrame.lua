@@ -50,7 +50,7 @@ function VMF.Build()
     title:SetPoint("LEFT", header, "LEFT", 8, 0)
     local titleFont = title:GetFont() or "Fonts\\FRIZQT__.TTF"
     title:SetFont(titleFont, 12, "OUTLINE")
-    title:SetText("|cffcc44ff⚠ Void Marked|r")
+    title:SetText("|cffcc44ffVoid Marked|r")
     VMF.title = title
 
     -- Drag
@@ -64,15 +64,15 @@ function VMF.Build()
     -- Content area
     local content = CreateFrame("Frame", nil, frame)
     content:SetPoint("TOPLEFT",  header, "BOTTOMLEFT",  FRAME_PAD, -2)
-    content:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", -FRAME_PAD, -2)
+    content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -FRAME_PAD, FRAME_PAD)
     VMF.content = content
 
-    -- Row pool
+    -- Row pool (populated dynamically in GetRow via VMF.rows[index] = row)
     VMF.rows = {}
 
     -- Empty label
     local emptyLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-    emptyLabel:SetPoint("CENTER", content, "CENTER", 0, -4)
+    emptyLabel:SetPoint("CENTER", content, "CENTER", 0, 0)
     emptyLabel:SetText("No players marked")
     VMF.emptyLabel = emptyLabel
 
@@ -133,12 +133,12 @@ function VMF.Refresh()
     local players = RAPE.GetVoidMarkedPlayers()
     local count   = #players
 
-    -- Auto-show/hide based on content
+    -- Auto-show/hide based on content (respect manual overrides)
     if count > 0 and not VMF.manualHide then
         VMF.frame:Show()
     elseif count == 0 and not VMF.manualShow then
+        -- Auto-hide only when user hasn't manually opened the frame
         VMF.frame:Hide()
-        return
     end
 
     if not VMF.frame:IsShown() then return end
@@ -168,7 +168,7 @@ function VMF.Refresh()
         VMF.rows[i]:Hide()
     end
 
-    -- Resize frame to fit content
+    -- Resize frame to fit content (at least 1 row height for the empty label)
     local contentH = math.max(ROW_H, count * ROW_H)
     VMF.frame:SetHeight(HEADER_H + contentH + FRAME_PAD * 2 + 2)
     VMF.emptyLabel:SetShown(count == 0)

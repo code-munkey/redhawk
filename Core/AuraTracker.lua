@@ -10,43 +10,36 @@ local POLL_INTERVAL        = 0.05   -- seconds between combat-poll checks
 -- State
 -- ============================================================
 
--- RAPE.VoidMarked[playerName] = { gainTime = number, class = string }
+-- RAPE.VoidMarked[playerName][auraInstanceID] = { gainTime = number, class = string }
 -- Populated via addon messages from group members.
 
-local hadAura = false   -- tracks whether WE currently have the aura
+local myActiveAuras = {}   -- tracks which auraInstanceIDs WE currently have
 
 -- ============================================================
--- Self-detection: check if the player has Void Marked
+-- Self-detection: get void marked auras on the player
 -- ============================================================
 
---- Attempt to detect Void Marked on the player.
--- Tries C_UnitAuras.GetPlayerAuraBySpellID first; if that doesn't work
--- for private auras, falls back to iterating AuraUtil.
--- @return boolean  true if the player currently has Void Marked
-local function PlayerHasVoidMarked()
-    -- Method 1: Direct lookup (may not work for private auras)
-    local aura = C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID(VOID_MARKED_SPELL_ID)
-    if aura then return true end
-
-    -- Method 2: Iterate debuffs on "player" (fallback)
-    -- Use C_UnitAuras API for Midnight compatibility; fall back to UnitDebuff for older clients
+local function GetPlayerVoidMarkedInstances()
+    local instances = {}
     local i = 1
     while true do
         local auraData
         if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
             auraData = C_UnitAuras.GetAuraDataByIndex("player", i, "HARMFUL|RAID_PLAYER_DISPELLABLE")
-        elseif UnitDebuff then
-            local name, _, _, _, _, _, _, _, _, spellId = UnitDebuff("player", i)
-            if name then
-                auraData = { spellId = spellId }
+            if not auraData then break end
+            
+            -- As long as it matches the filter, we know it's the right one
+            if auraData.auraInstanceID then
+                instances[auraData.auraInstanceID] = true
             end
+        else
+            break
         end
-        if not auraData then break end
-        if auraData then return true end
+
         i = i + 1
     end
 
-    return false
+    return instances
 end
 
 -- ============================================================
@@ -69,38 +62,49 @@ end
 -- ============================================================
 
 function RAPE.CheckVoidMarked()
-    local hasAura = PlayerHasVoidMarked()
+    local currentInstances = GetPlayerVoidMarkedInstances()
+    local changed = false
 
-    if hasAura and not hadAura then
-        -- Just gained the aura
-        hadAura = true
-        BroadcastVoidMark("GAIN")
-        -- Also record locally
-        local playerName = strsplit("-", UnitName("player") or "")
-        local _, playerClass = UnitClass("player")
-        if playerName and playerName ~= "" then
-            RAPE.VoidMarked[playerName] = {
-                gainTime = GetTime(),
-                class    = playerClass or "UNKNOWN",
-            }
-        end
-        RAPE.Debug("VoidMarked GAINED on self")
-        if RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Refresh then
-            RAPE.VoidMarkedFrame.Refresh()
-        end
+    -- Check for new instances
+    for instanceID in pairs(currentInstances) do
+        if not myActiveAuras[instanceID] then
+            myActiveAuras[instanceID] = true
+            BroadcastVoidMark("GAIN:" .. instanceID)
 
-    elseif not hasAura and hadAura then
-        -- Aura faded
-        hadAura = false
-        BroadcastVoidMark("FADE")
-        local playerName = strsplit("-", UnitName("player") or "")
-        if playerName then
-            RAPE.VoidMarked[playerName] = nil
+            local playerName = strsplit("-", UnitName("player") or "")
+            local _, playerClass = UnitClass("player")
+            if playerName and playerName ~= "" then
+                RAPE.VoidMarked[playerName] = RAPE.VoidMarked[playerName] or {}
+                RAPE.VoidMarked[playerName][instanceID] = {
+                    gainTime = GetTime(),
+                    class    = playerClass or "UNKNOWN",
+                }
+            end
+            RAPE.Debug("VoidMarked GAINED on self:", instanceID)
+            changed = true
         end
-        RAPE.Debug("VoidMarked FADED on self")
-        if RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Refresh then
-            RAPE.VoidMarkedFrame.Refresh()
+    end
+
+    -- Check for faded instances
+    for instanceID in pairs(myActiveAuras) do
+        if not currentInstances[instanceID] then
+            myActiveAuras[instanceID] = nil
+            BroadcastVoidMark("FADE:" .. instanceID)
+
+            local playerName = strsplit("-", UnitName("player") or "")
+            if playerName and RAPE.VoidMarked[playerName] then
+                RAPE.VoidMarked[playerName][instanceID] = nil
+                if next(RAPE.VoidMarked[playerName]) == nil then
+                    RAPE.VoidMarked[playerName] = nil
+                end
+            end
+            RAPE.Debug("VoidMarked FADED on self:", instanceID)
+            changed = true
         end
+    end
+
+    if changed and RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Refresh then
+        RAPE.VoidMarkedFrame.Refresh()
     end
 end
 
@@ -112,17 +116,26 @@ function RAPE.OnVoidMarkedMessage(sender, message)
     local shortName = strsplit("-", sender)
     if not RAPE.Roster[shortName] then return end
 
-    if message == "GAIN" then
+    local action, instanceID = strsplit(":", message)
+    if not instanceID then instanceID = "unknown" end
+
+    if action == "GAIN" then
         local playerClass = RAPE.Roster[shortName]
-        RAPE.VoidMarked[shortName] = {
+        RAPE.VoidMarked[shortName] = RAPE.VoidMarked[shortName] or {}
+        RAPE.VoidMarked[shortName][instanceID] = {
             gainTime = GetTime(),
             class    = playerClass or "UNKNOWN",
         }
-        RAPE.Debug("VoidMarked GAIN from:", shortName)
+        RAPE.Debug("VoidMarked GAIN from:", shortName, "ID:", instanceID)
 
-    elseif message == "FADE" then
-        RAPE.VoidMarked[shortName] = nil
-        RAPE.Debug("VoidMarked FADE from:", shortName)
+    elseif action == "FADE" then
+        if RAPE.VoidMarked[shortName] then
+            RAPE.VoidMarked[shortName][instanceID] = nil
+            if next(RAPE.VoidMarked[shortName]) == nil then
+                RAPE.VoidMarked[shortName] = nil
+            end
+        end
+        RAPE.Debug("VoidMarked FADE from:", shortName, "ID:", instanceID)
     end
 
     if RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Refresh then
@@ -150,17 +163,20 @@ end)
 -- ============================================================
 
 --- Returns a sorted list of currently Void Marked players.
--- @return table[]  { { name=string, class=string, elapsed=number } }
+-- @return table[]  { { name=string, class=string, elapsed=number, instanceID=string } }
 function RAPE.GetVoidMarkedPlayers()
     local now  = GetTime()
     local list = {}
 
-    for playerName, data in pairs(RAPE.VoidMarked) do
-        table.insert(list, {
-            name    = playerName,
-            class   = data.class,
-            elapsed = now - data.gainTime,
-        })
+    for playerName, instances in pairs(RAPE.VoidMarked) do
+        for instanceID, data in pairs(instances) do
+            table.insert(list, {
+                name       = playerName,
+                class      = data.class,
+                elapsed    = now - data.gainTime,
+                instanceID = instanceID,
+            })
+        end
     end
 
     table.sort(list, function(a, b)
@@ -195,30 +211,41 @@ function RAPE.TestVoidMark(action)
     end
 
     action = (action or ""):lower()
+    local testInstanceID = "test-1234"
 
     if action == "gain" then
-        RAPE.VoidMarked[playerName] = {
+        RAPE.VoidMarked[playerName] = RAPE.VoidMarked[playerName] or {}
+        RAPE.VoidMarked[playerName][testInstanceID] = {
             gainTime = GetTime(),
             class    = playerClass or "UNKNOWN",
         }
-        BroadcastVoidMark("GAIN")
+        BroadcastVoidMark("GAIN:" .. testInstanceID)
         RAPE.Print("|cffff4444[Test]|r Simulated Void Marked GAIN on " .. playerName)
     elseif action == "fade" then
-        RAPE.VoidMarked[playerName] = nil
-        BroadcastVoidMark("FADE")
+        if RAPE.VoidMarked[playerName] then
+            RAPE.VoidMarked[playerName][testInstanceID] = nil
+            if next(RAPE.VoidMarked[playerName]) == nil then
+                RAPE.VoidMarked[playerName] = nil
+            end
+        end
+        BroadcastVoidMark("FADE:" .. testInstanceID)
         RAPE.Print("|cffff4444[Test]|r Simulated Void Marked FADE on " .. playerName)
     else
         -- Toggle
-        if RAPE.VoidMarked[playerName] then
-            RAPE.VoidMarked[playerName] = nil
-            BroadcastVoidMark("FADE")
+        if RAPE.VoidMarked[playerName] and RAPE.VoidMarked[playerName][testInstanceID] then
+            RAPE.VoidMarked[playerName][testInstanceID] = nil
+            if next(RAPE.VoidMarked[playerName]) == nil then
+                RAPE.VoidMarked[playerName] = nil
+            end
+            BroadcastVoidMark("FADE:" .. testInstanceID)
             RAPE.Print("|cffff4444[Test]|r Simulated Void Marked FADE on " .. playerName)
         else
-            RAPE.VoidMarked[playerName] = {
+            RAPE.VoidMarked[playerName] = RAPE.VoidMarked[playerName] or {}
+            RAPE.VoidMarked[playerName][testInstanceID] = {
                 gainTime = GetTime(),
                 class    = playerClass or "UNKNOWN",
             }
-            BroadcastVoidMark("GAIN")
+            BroadcastVoidMark("GAIN:" .. testInstanceID)
             RAPE.Print("|cffff4444[Test]|r Simulated Void Marked GAIN on " .. playerName)
         end
     end
