@@ -45,9 +45,9 @@ end
 
 local function GetWhisperMessage(status)
     if status == "not_installed" then
-        return string.format("Hey! Our raid uses the RAPE addon for cooldown tracking. Please install it. Current version: v%s", RAPE.VERSION)
+        return string.format("Hey! Our raid uses the R A P E addon for cooldown tracking. Please install it. Current version: v%s", RAPE.VERSION)
     else
-        return string.format("Hey! Our raid uses the RAPE addon for cooldown tracking. Please update yours to the latest version: v%s", RAPE.VERSION)
+        return string.format("Hey! Our raid uses the R A P E addon for cooldown tracking. Please update yours to the latest version: v%s", RAPE.VERSION)
     end
 end
 
