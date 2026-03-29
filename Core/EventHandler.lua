@@ -195,6 +195,26 @@ local function OnEncounterStart(event, encounterID, encounterName, difficultyID,
     RAPE.ENCOUNTER_ID = encounterID
     RAPE.ENCOUNTER_DIFF = difficultyID
     RAPE.Debug(string.format('Started encounter %s (%s) - %s', encounterID,encounterName, difficultyID))
+
+    -- if encounterID == RAPE.VOIDSPIRE.BOSSES.CROWN_OF_THE_COSMOS then
+    --     SafeReg("COMBAT_LOG_EVENT_UNFILTERED")
+    -- end
+end
+
+local function OnEncounterEnd(event, encounterID, encounterName, difficultyID, groupSize, success)
+    RAPE.ENCOUNTER_ID = 0
+    RAPE.ENCOUNTER_DIFF = 0
+    RAPE.Debug(string.format('Ended encounter %s', encounterID))
+    
+    eventFrame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    
+    -- Clear Null Corona tracking at end of encounter
+    if RAPE.NullCorona then
+        RAPE.NullCorona = {}
+        if RAPE.NullCoronaFrame and RAPE.NullCoronaFrame.Refresh then
+            RAPE.NullCoronaFrame.Refresh()
+        end
+    end
 end
 
 local function OnCombatStart()
@@ -231,6 +251,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             SafeReg("PLAYER_ENTERING_WORLD")
             SafeReg("CHAT_MSG_ADDON")
             SafeReg("ENCOUNTER_START")
+            SafeReg("ENCOUNTER_END")
             -- Only track own casts via unit event (player only, no restrictions)
             eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
             eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
@@ -248,6 +269,16 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "ENCOUNTER_START" then
         OnEncounterStart(event, ...)
         print('Ecounter started')
+
+    elseif event == "ENCOUNTER_END" then
+        OnEncounterEnd(event, ...)
+        print('Encounter ended')
+
+    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
+        if RAPE.OnCombatLogEvent then
+            ---@diagnostic disable-next-line: undefined-global
+            RAPE.OnCombatLogEvent(CombatLogGetCurrentEventInfo())
+        end
 
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnPlayerSpellCastSucceeded(event, ...)

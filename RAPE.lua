@@ -21,6 +21,9 @@ function RAPE.OnAddonLoaded()
     if RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Build then
         RAPE.VoidMarkedFrame.Build()
     end
+    if RAPE.NullCoronaFrame and RAPE.NullCoronaFrame.Build then
+        RAPE.NullCoronaFrame.Build()
+    end
     if RAPE.PIFrame and RAPE.PIFrame.Build then
         RAPE.PIFrame.Build()
     end

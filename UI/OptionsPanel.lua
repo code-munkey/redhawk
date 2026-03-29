@@ -484,6 +484,19 @@ function RAPE.BuildMainPanel()
                     set = function(val) RAPE.db.windows[1].locked = val; RAPE.WM.ApplyLockState(1) end,
                     desc = "Toggles tracking of Void Marked debuff (Placeholder locked window)"
                 },
+                { 
+                    type = "toggle", 
+                    label = "Null Corona Tracker",
+                    get = function() return RAPE.db.NullCoronaTracker end,
+                    set = function(val) 
+                        RAPE.db.NullCoronaTracker = val
+                        if not val and RAPE.NullCoronaFrame then
+                            RAPE.NullCoronaFrame.Hide()
+                        end
+                        RAPE.Print("Null Corona tracker:", val and "ON" or "OFF")
+                    end,
+                    desc = "Tracks the Null Corona healing absorb during Crown of the Cosmos."
+                },
                 { type = "divider" },
                 { type = "header", text = "Communication Tools" },
                 { type = "execute", label = "Request All Spell Lists",

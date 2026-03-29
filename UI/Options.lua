@@ -23,6 +23,7 @@ RAPE.DB_DEFAULTS = {
     barFontSize       = 11,
     piAssistanceMode  = 3,    -- 1=List, 2=Highlight, 3=Both
     piTrackedPlayers  = {},
+    NullCoronaTracker = true,  -- feature flag: track Null Corona healing absorb
 }
 
 --- Merge saved variables with defaults and handle legacy migration.
@@ -115,6 +116,15 @@ function O.RegisterSlashCommands()
             local action = strtrim(msg:sub(14))
             RAPE.TestVoidMark(action)
 
+        elseif msg == "nullcorona" then
+            if RAPE.NullCoronaFrame then
+                RAPE.NullCoronaFrame.Toggle()
+            end
+        elseif msg:sub(1, 15) == "testnullcorona " then
+            local args = strtrim(msg:sub(16))
+            local action, target, amt = strsplit(" ", args, 3)
+            RAPE.TestNullCorona(action, target ~= "" and target or nil, tonumber(amt))
+
         elseif msg == "debug roster" then
             RAPE.Print("Current roster (" .. RAPE.TableCount(RAPE.Roster) .. " members):")
             for name, class in pairs(RAPE.Roster) do
@@ -146,6 +156,8 @@ function O.RegisterSlashCommands()
             RAPE.Print("/RAPE refresh <name> — request refresh from player")
             RAPE.Print("/RAPE voidmark      — toggle Void Marked tracker")
             RAPE.Print("/RAPE testvoidmark [gain|fade] — simulate void mark")
+            RAPE.Print("/RAPE nullcorona    — toggle Null Corona tracker")
+            RAPE.Print("/RAPE testnullcorona <add|absorb|remove> [name] [amount]")
             RAPE.Print("/RAPE debug roster — print known raid members")
             RAPE.Print("/RAPE debug cds    — list all active cooldowns")
 

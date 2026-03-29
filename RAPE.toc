@@ -16,6 +16,7 @@ Core\SpellDB.lua
 Core\Utils.lua
 Core\CooldownTracker.lua
 Core\AuraTracker.lua
+Core\NullCoronaTracker.lua
 Core\PIAssistance.lua
 Core\EventHandler.lua
 
@@ -23,6 +24,7 @@ Core\EventHandler.lua
 UI\CooldownBar.lua
 UI\WindowManager.lua
 UI\VoidMarkedFrame.lua
+UI\NullCoronaFrame.lua
 UI\PIAssistanceFrame.lua
 UI\MainFrame.lua
 UI\OptionsPanel.lua
