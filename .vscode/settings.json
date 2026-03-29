@@ -19,6 +19,7 @@
         "RAID_CLASS_COLORS",
         "SlashCmdList",
         "Settings",
-        "ReloadUI"
+        "ReloadUI",
+        "CompactRaidFrameContainer"
     ]
 }

@@ -140,7 +140,6 @@ end
 function RAPE.UpdateRosterData()
     local newRoster = {}
     for i = 1, GetNumGroupMembers(), 1 do
-        print('Updating roster data ...')
         name, rank, subgroup, level, class, fileName, zone, online, isDead, role, isML = GetRaidRosterInfo(i);
         newRoster[i] = {
             name = name,

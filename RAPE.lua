@@ -13,22 +13,19 @@ function RAPE.OnAddonLoaded()
     -- 2. Register slash commands
     RAPE.Options.RegisterSlashCommands()
 
-    -- 3. Build the main display frame
+    -- 3. Build the new LanternUX display frame and traditional main frame
     RAPE.MainFrame.Build()
-
-    -- 4. Build the Void Marked tracker frame
+    if RAPE.BuildMainPanel then
+        RAPE.BuildMainPanel()
+    end
     if RAPE.VoidMarkedFrame and RAPE.VoidMarkedFrame.Build then
         RAPE.VoidMarkedFrame.Build()
     end
-
-    -- 5. Build the Admin panel (hidden by default)
-    if RAPE.AdminFrame and RAPE.AdminFrame.Build then
-        RAPE.AdminFrame.Build()
+    if RAPE.PIFrame and RAPE.PIFrame.Build then
+        RAPE.PIFrame.Build()
     end
 
-    -- 6. Try to register the Blizzard settings panel
-    --    (safe to call even if Settings API is not available)
-    RAPE.Options.RegisterSettingsPanel()
+    -- 5. Build the Admin panel has been replaced by LanternUX MainPanel
 
     RAPE.Debug("Addon loaded. Version:", RAPE.VERSION)
 end

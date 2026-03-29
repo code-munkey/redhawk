@@ -11,8 +11,8 @@ local PLAYER_REFRESH    = "RAPE_PREF"  -- targeted: ask one player to rebroadcas
 local FORCE_SETTING     = "RAPE_FSET"  -- admin: force a setting on all clients
 local ADDON_MSG_CHANNEL = "PARTY" -- falls back to RAID when in raid
 
-local ENCOUNTER_ID = 0
-local ENCOUNTER_DIFF = 0
+RAPE.ENCOUNTER_ID = 0
+RAPE.ENCOUNTER_DIFF = 0
 
 local eventFrame = CreateFrame("Frame")
 RAPE.EventFrame = eventFrame
@@ -192,8 +192,9 @@ end
 -- ============================================================
 
 local function OnEncounterStart(event, encounterID, encounterName, difficultyID, groupSize)
-    ENCOUNTER_ID = encounterID
-    ENCOUNTER_DIFF = difficultyID
+    RAPE.ENCOUNTER_ID = encounterID
+    RAPE.ENCOUNTER_DIFF = difficultyID
+    RAPE.Debug(string.format('Started encounter %s (%s) - %s', encounterID,encounterName, difficultyID))
 end
 
 local function OnCombatStart()
@@ -229,6 +230,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             SafeReg("PLAYER_REGEN_ENABLED")
             SafeReg("PLAYER_ENTERING_WORLD")
             SafeReg("CHAT_MSG_ADDON")
+            SafeReg("ENCOUNTER_START")
             -- Only track own casts via unit event (player only, no restrictions)
             eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
             eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
@@ -245,13 +247,14 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "ENCOUNTER_START" then
         OnEncounterStart(event, ...)
+        print('Ecounter started')
 
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnPlayerSpellCastSucceeded(event, ...)
 
     elseif event == "UNIT_AURA" then
         local unit = ...
-        if unit == "player" and RAPE.CheckVoidMarked and ENCOUNTER_ID == RAPE.VOIDSPIRE.BOSSES.IMPERATOR_AVERZIAN then
+        if unit == "player" and RAPE.CheckVoidMarked and RAPE.ENCOUNTER_ID == RAPE.VOIDSPIRE.BOSSES.IMPERATOR_AVERZIAN then
             RAPE.CheckVoidMarked()
             RAPE.Print("Averzian engaged ...")
         end

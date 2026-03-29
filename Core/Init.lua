@@ -4,7 +4,7 @@
 
 RAPE = RAPE or {}
 
-RAPE.VERSION  = "1.0.0"
+RAPE.VERSION  = C_AddOns.GetAddOnMetadata("RAPE", "Version") or "1.0.1"
 RAPE.NAME     = "RAPE"
 
 -- Runtime state (initialized here so modules can safely reference these keys)

@@ -9,6 +9,7 @@ RAPE.CATEGORY = {
     HEALING   = "Healing",
     DEFENSIVE = "Defensive",
     UTILITY   = "Utility",
+    DPS       = "DPS",
 }
 
 RAPE.VOIDSPIRE = {
@@ -145,6 +146,91 @@ RAPE.SpellDB = {
         class    = "DEATHKNIGHT",
         cooldown = 120,
         category = RAPE.CATEGORY.UTILITY
+    },
+    -- ================= DPS Burst CDs =================
+    [31884] = {
+        name     = "Avenging Wrath",
+        class    = "PALADIN",
+        cooldown = 120,
+        category = RAPE.CATEGORY.DPS,
+        duration = 20,
+    },
+    [190319] = {
+        name     = "Combustion",
+        class    = "MAGE",
+        cooldown = 120,
+        category = RAPE.CATEGORY.DPS,
+        duration = 12,
+    },
+    [13750] = {
+        name     = "Adrenaline Rush",
+        class    = "ROGUE",
+        cooldown = 180,
+        category = RAPE.CATEGORY.DPS,
+        duration = 20,
+    },
+    [205180] = {
+        name     = "Summon Darkglare",
+        class    = "WARLOCK",
+        cooldown = 120,
+        category = RAPE.CATEGORY.DPS,
+        duration = 20,
+    },
+    [51271] = {
+        name     = "Pillar of Frost",
+        class    = "DEATHKNIGHT",
+        cooldown = 60,
+        category = RAPE.CATEGORY.DPS,
+        duration = 12,
+    },
+    [194223] = {
+        name     = "Celestial Alignment",
+        class    = "DRUID",
+        cooldown = 180,
+        category = RAPE.CATEGORY.DPS,
+        duration = 20,
+    },
+    [288613] = {
+        name     = "Trueshot",
+        class    = "HUNTER",
+        cooldown = 120,
+        category = RAPE.CATEGORY.DPS,
+        duration = 15,
+    },
+    [107574] = {
+        name     = "Avatar",
+        class    = "WARRIOR",
+        cooldown = 90,
+        category = RAPE.CATEGORY.DPS,
+        duration = 20,
+    },
+    [191427] = {
+        name     = "Metamorphosis",
+        class    = "DEMONHUNTER",
+        cooldown = 300,
+        category = RAPE.CATEGORY.DPS,
+        duration = 24,
+    },
+    [137639] = {
+        name     = "Storm, Earth, and Fire",
+        class    = "MONK",
+        cooldown = 90,
+        category = RAPE.CATEGORY.DPS,
+        duration = 15,
+    },
+    [375087] = {
+        name     = "Dragonrage",
+        class    = "EVOKER",
+        cooldown = 120,
+        category = RAPE.CATEGORY.DPS,
+        duration = 14,
+    },
+    [114050] = {
+        name     = "Ascendance",
+        class    = "SHAMAN",
+        cooldown = 180,
+        category = RAPE.CATEGORY.DPS,
+        duration = 15,
     }
 }
 
