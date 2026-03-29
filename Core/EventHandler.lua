@@ -206,7 +206,7 @@ local function OnEncounterEnd(event, encounterID, encounterName, difficultyID, g
     RAPE.ENCOUNTER_DIFF = 0
     RAPE.Debug(string.format('Ended encounter %s', encounterID))
     
-    eventFrame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    -- eventFrame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
     
     -- Clear Null Corona tracking at end of encounter
     if RAPE.NullCorona then
